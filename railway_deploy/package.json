@@ -1,0 +1,12 @@
+{
+  "name": "dashboard-bmx1",
+  "version": "1.0.0",
+  "description": "Dashboard de Compras BMX1 Engenharia",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
