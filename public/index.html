@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>BMX1 Engenharia — Dashboard de Compras</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #05080E; overflow: hidden; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+  #root { position: fixed; inset: 0; width: 100vw; height: 100vh; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #0A0F1A; }
+  ::-webkit-scrollbar-thumb { background: #1A2540; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #263255; }
+  button { font-family: inherit; }
+</style>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/prop-types@15/prop-types.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/plain" id="dashboard-source">
+const { BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell, ComposedChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
+const { useState, useMemo } = React;
+
+// ---------- PALETA ----------
+const BG="#05080E", CD="#0A0F1A", BD="#1A2540", NAVY="#1A2540", GR="#22C55E", EM="#10B981",
+      RD="#EF4444", YL="#EAB308", OR="#F97316", BL="#3B82F6", CY="#22D3EE", VL="#A855F7",
+      PK="#EC4899", SV="#94A3B8", WH="#E2E8F0", TX="#CBD5E1", MT="#64748B";
+
+// ---------- DADOS (extraídos da planilha AVALIAÇÃO_DE_FORNECEDORES_ATUALIZADA.xlsm) ----------
+const MESES = {"jan": {"label": "JANEIRO", "req": 163804.89, "comp": 141949.78, "eco": 21855.11, "pct": 0.1334, "ped": 26, "forn": 24, "obras": 8, "nota": 4.14, "pedVal": 141949.78, "cal": [{"d": 7, "v": 8070.0}, {"d": 8, "v": 27866.0}, {"d": 9, "v": 2322.45}, {"d": 13, "v": 2137.26}, {"d": 14, "v": 2508.36}, {"d": 15, "v": 11305.59}, {"d": 16, "v": 21932.1}, {"d": 21, "v": 18862.89}, {"d": 22, "v": 10237.56}, {"d": 23, "v": 2463.88}, {"d": 26, "v": 24549.54}, {"d": 27, "v": 7504.7}, {"d": 28, "v": 334.2}, {"d": 29, "v": 478.0}, {"d": 30, "v": 1377.25}], "calDays": 31, "firstDay": 4, "obrasList": [{"k": "0433/2025", "req": 40617.85, "comp": 29638.73, "eco": 10979.12, "mat": "AREIA", "matV": 25200.0}, {"k": "0455/2025", "req": 32745.77, "comp": 26967.76, "eco": 5778.01, "mat": "FERRAMENTAS", "matV": 15036.76}, {"k": "0326/2024", "req": 28774.38, "comp": 26895.17, "eco": 1879.21, "mat": "carrinho trolley", "matV": 15200.0}, {"k": "0228/2023", "req": 25229.31, "comp": 25264.87, "eco": -35.56, "mat": "CABO UTP", "matV": 23107.02}, {"k": "0419/2025", "req": 17784.78, "comp": 16332.78, "eco": 1452.0, "mat": "PORTÃO AUTOMATICO", "matV": 7395.0}, {"k": "0000/2025", "req": 6938.92, "comp": 6524.72, "eco": 414.2, "mat": "UNIFORMES ADMINISTRATIVOS", "matV": 6006.1}, {"k": "0351/2024", "req": 7123.88, "comp": 6171.25, "eco": 952.63, "mat": "conexoes de cobre", "matV": 2508.36}, {"k": "0450/2025", "req": 4590.0, "comp": 4154.5, "eco": 435.5, "mat": "POSTES + FRETE", "matV": 4154.5}], "topForn": [{"n": "MERCADO LIVRE", "v": 38194.42, "p": 9, "na": 4.2, "o": 6}, {"n": "B.G.B COMERCIO DE AREIA", "v": 25200.0, "p": 1, "na": 3.4, "o": 1}, {"n": "NACIONAL FERROVIAS", "v": 15200.0, "p": 1, "na": 3.4, "o": 1}, {"n": "REAL PERFIL INDÚSTRIA E COMÉRCIO LTDA", "v": 8788.2, "p": 2, "na": 4.55, "o": 2}, {"n": "SR SERRALHERIA LTDA", "v": 7395.0, "p": 1, "na": 3.8, "o": 1}, {"n": "A.G SIQUEIRA", "v": 6783.2, "p": 2, "na": 4.65, "o": 2}, {"n": "AMPLO UNIFORMES", "v": 6006.1, "p": 1, "na": 4.0, "o": 1}, {"n": "ULTRA MAQUINAS", "v": 4840.0, "p": 1, "na": 3.7, "o": 1}, {"n": "MADEREIRA CAMPO VERDE", "v": 4600.0, "p": 1, "na": 4.3, "o": 1}, {"n": "MAXXI POSTES", "v": 3676.5, "p": 1, "na": 4.0, "o": 1}, {"n": "TUBARÃO EPI", "v": 3616.0, "p": 2, "na": 4.3, "o": 2}, {"n": "OBRAMAX", "v": 2820.05, "p": 2, "na": 4.3, "o": 2}, {"n": "CASA MIMOSA", "v": 2508.36, "p": 1, "na": 4.3, "o": 1}, {"n": "SAFARI DISTRIBUIDORA", "v": 2418.6, "p": 2, "na": 4.3, "o": 2}, {"n": "DISPAN", "v": 1610.0, "p": 1, "na": 4.7, "o": 1}, {"n": "BLOCOS DUCEMILTON RODRIGUES", "v": 1608.84, "p": 1, "na": 3.4, "o": 1}, {"n": "RISSO TRANSPORTES", "v": 1377.25, "p": 1, "na": 3.5, "o": 1}, {"n": "GRUDAFORTE COMERCIO IMPORTACAO E EXPORTACAO", "v": 1195.0, "p": 1, "na": 3.9, "o": 1}, {"n": "LEROY MERLIN", "v": 1174.46, "p": 1, "na": 4.3, "o": 1}, {"n": "SÃO PEDRO SHOPPING DA CONSTRUÇÃO", "v": 897.0, "p": 1, "na": 3.8, "o": 1}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 749.1, "p": 1, "na": 4.3, "o": 1}, {"n": "PROTETINTAS ", "v": 479.5, "p": 1, "na": 4.3, "o": 1}, {"n": "EVANILDO DOS SANTOS PEREIRA (FRETE POSTES)", "v": 478.0, "p": 1, "na": 3.8, "o": 1}, {"n": "PJ NEBLINA", "v": 334.2, "p": 1, "na": 4.4, "o": 1}], "mat": [{"cat": "AREIA", "v": 25200.0, "eco": 9648.0, "items": [{"n": "AREIA", "o": "0433/2025", "v": 25200.0, "r": 34848.0, "e": 9648.0}]}, {"cat": "CABO UTP", "v": 23107.02, "eco": -711.02, "items": [{"n": "CABO UTP", "o": "0228/2023", "v": 23107.02, "r": 22396.0, "e": -711.02}]}, {"cat": "FERRAMENTAS", "v": 16405.16, "eco": 4804.85, "items": [{"n": "FERRAMENTAS", "o": "0228/2023", "v": 1368.4, "r": 1910.76, "e": 542.36}, {"n": "FERRAMENTAS", "o": "0455/2025", "v": 15036.76, "r": 19299.25, "e": 4262.49}]}, {"cat": "carrinho trolley", "v": 15200.0, "eco": 479.63, "items": [{"n": "carrinho trolley", "o": "0326/2024", "v": 15200.0, "r": 15679.63, "e": 479.63}]}, {"cat": "EPC", "v": 8216.0, "eco": 665.52, "items": [{"n": "EPC", "o": "0419/2025", "v": 950.0, "r": 1200.0, "e": 250.0}, {"n": "EPC", "o": "0455/2025", "v": 2666.0, "r": 2881.52, "e": 215.52}, {"n": "EPC", "o": "0419/2025", "v": 4600.0, "r": 4800.0, "e": 200.0}]}, {"cat": "SUPORTES", "v": 8070.0, "eco": 0.0, "items": [{"n": "SUPORTES", "o": "0455/2025", "v": 8070.0, "r": 8070.0, "e": 0.0}]}, {"cat": "PORTÃO AUTOMATICO", "v": 7395.0, "eco": 1305.0, "items": [{"n": "PORTÃO AUTOMATICO", "o": "0419/2025", "v": 7395.0, "r": 8700.0, "e": 1305.0}]}, {"cat": "UNIFORMES ADMINISTRATIVOS", "v": 6006.1, "eco": 414.2, "items": [{"n": "UNIFORMES ADMINISTRATIVOS", "o": "0000/2025", "v": 6006.1, "r": 6420.3, "e": 414.2}]}, {"cat": "EPI", "v": 5727.16, "eco": 1664.34, "items": [{"n": "EPI", "o": "0326/2024", "v": 5727.16, "r": 7391.5, "e": 1664.34}]}, {"cat": "POSTES + FRETE", "v": 4154.5, "eco": 435.5, "items": [{"n": "POSTES + FRETE", "o": "0450/2025", "v": 4154.5, "r": 4590.0, "e": 435.5}]}, {"cat": "conexoes de cobre", "v": 2508.36, "eco": 469.42, "items": [{"n": "conexoes de cobre", "o": "0351/2024", "v": 2508.36, "r": 2977.78, "e": 469.42}]}, {"cat": "TENDA GAZEBO", "v": 2463.88, "eco": 60.9, "items": [{"n": "TENDA GAZEBO", "o": "0419/2025", "v": 2463.88, "r": 2524.78, "e": 60.9}]}, {"cat": "Suportes", "v": 2328.2, "eco": 500.9, "items": [{"n": "Suportes", "o": "0351/2024", "v": 2328.2, "r": 2829.1, "e": 500.9}]}, {"cat": "MATERIAL OBRA", "v": 2137.26, "eco": 687.21, "items": [{"n": "MATERIAL OBRA", "o": "0326/2024", "v": 2137.26, "r": 2824.47, "e": 687.21}]}, {"cat": "TELHA", "v": 1932.89, "eco": -16.89, "items": [{"n": "TELHA", "o": "0433/2025", "v": 1932.89, "r": 1916.0, "e": -16.89}]}, {"cat": "TABLET", "v": 1867.2, "eco": -166.05, "items": [{"n": "TABLET", "o": "0326/2024", "v": 1867.2, "r": 1701.15, "e": -166.05}]}, {"cat": "BLOCOS", "v": 1608.84, "eco": 1348.01, "items": [{"n": "BLOCOS", "o": "0433/2025", "v": 1608.84, "r": 2956.85, "e": 1348.01}]}, {"cat": "frete carrinho trolley (risso)", "v": 1377.25, "eco": -897.62, "items": [{"n": "frete carrinho trolley (risso)", "o": "0326/2024", "v": 1377.25, "r": 479.63, "e": -897.62}]}, {"cat": "EQUIP. P/ TESTES DE ESTANQUEIDADE", "v": 1334.69, "eco": -17.69, "items": [{"n": "EQUIP. P/ TESTES DE ESTANQUEIDADE", "o": "0351/2024", "v": 1334.69, "r": 1317.0, "e": -17.69}]}, {"cat": "Neoprene", "v": 1195.0, "eco": 1300.0, "items": [{"n": "Neoprene", "o": "0455/2025", "v": 1195.0, "r": 2495.0, "e": 1300.0}]}, {"cat": "ARMARIO ARQUIVO", "v": 923.9, "eco": -363.9, "items": [{"n": "ARMARIO ARQUIVO", "o": "0419/2025", "v": 923.9, "r": 560.0, "e": -363.9}]}, {"cat": "CIMENTO CPIII", "v": 897.0, "eco": 0.0, "items": [{"n": "CIMENTO CPIII", "o": "0433/2025", "v": 897.0, "r": 897.0, "e": 0.0}]}, {"cat": "CABO PP", "v": 789.45, "eco": 133.1, "items": [{"n": "CABO PP", "o": "0228/2023", "v": 789.45, "r": 922.55, "e": 133.1}]}, {"cat": "Soquete Torques", "v": 586.3, "eco": 111.7, "items": [{"n": "Soquete Torques", "o": "0326/2024", "v": 586.3, "r": 698.0, "e": 111.7}]}, {"cat": "CARREGADOR DE CELULAR", "v": 518.62, "eco": 0.0, "items": [{"n": "CARREGADOR DE CELULAR", "o": "0000/2025", "v": 518.62, "r": 518.62, "e": 0.0}]}]}, "fev": {"label": "FEVEREIRO", "req": 110306.09, "comp": 104347.93, "eco": 5958.16, "pct": 0.054, "ped": 29, "forn": 14, "obras": 7, "nota": 4.41, "pedVal": 104347.93, "cal": [{"d": 2, "v": 9015.46}, {"d": 4, "v": 464.18}, {"d": 5, "v": 28176.44}, {"d": 9, "v": 5781.78}, {"d": 10, "v": 2735.6}, {"d": 11, "v": 628.13}, {"d": 12, "v": 3261.54}, {"d": 13, "v": 7032.0}, {"d": 16, "v": 8684.85}, {"d": 17, "v": 18230.58}, {"d": 18, "v": 4022.24}, {"d": 19, "v": 1699.04}, {"d": 20, "v": 4166.0}, {"d": 21, "v": 3237.0}, {"d": 23, "v": 409.0}, {"d": 24, "v": 5428.68}, {"d": 26, "v": 1375.41}], "calDays": 28, "firstDay": 0, "obrasList": [{"k": "0326/2024", "req": 25207.55, "comp": 24237.1, "eco": 970.45, "mat": "EPI", "matV": 20905.32}, {"k": "0000/2025", "req": 22891.54, "comp": 22311.3, "eco": 580.24, "mat": "NOTEBOOK I5 E CELULAR", "matV": 6634.4}, {"k": "0455/2025", "req": 21609.05, "comp": 19428.05, "eco": 2181.0, "mat": "SUPORTES", "matV": 8710.0}, {"k": "0228/2023", "req": 13097.79, "comp": 13354.6, "eco": -256.81, "mat": "CABO UTP", "matV": 7403.0}, {"k": "0433/2025", "req": 12534.78, "comp": 12401.54, "eco": 133.24, "mat": "EPI", "matV": 8028.58}, {"k": "0419/2025", "req": 13766.38, "comp": 12028.34, "eco": 1738.04, "mat": "UNIFORMES OPERACIONAIS", "matV": 4589.0}, {"k": "0351/2024", "req": 1199.0, "comp": 587.0, "eco": 612.0, "mat": "tablet", "matV": 587.0}], "topForn": [{"n": "IMA EPI", "v": 31981.02, "p": 4, "na": 4.75, "o": 3}, {"n": "MERCADO LIVRE", "v": 30650.99, "p": 18, "na": 4.39, "o": 7}, {"n": "REAL PERFIL INDÚSTRIA E COMÉRCIO LTDA", "v": 10782.0, "p": 2, "na": 4.65, "o": 1}, {"n": "DISPAN", "v": 4960.0, "p": 1, "na": 4.5, "o": 1}, {"n": "INN GRIFFE", "v": 4589.0, "p": 1, "na": 4.1, "o": 1}, {"n": "MAGAZINE LUIZA", "v": 4191.0, "p": 2, "na": 4.3, "o": 2}, {"n": "GIMBA", "v": 3345.97, "p": 2, "na": 4.4, "o": 1}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 3006.0, "p": 1, "na": 4.3, "o": 1}, {"n": "UDIAÇO COM. E IND. DE FERRO E AÇO LTDA", "v": 2640.0, "p": 1, "na": 4.6, "o": 1}, {"n": "MADEREIRA CAMPO VERDE", "v": 2400.0, "p": 1, "na": 4.4, "o": 1}, {"n": "ZEON REFRIGERACAO LTDA", "v": 2373.9, "p": 1, "na": 4.0, "o": 1}, {"n": "FELAP FERRAMENTAS", "v": 1801.05, "p": 1, "na": 4.3, "o": 1}, {"n": "SÃO PEDRO SHOPPING DA CONSTRUÇÃO", "v": 927.0, "p": 1, "na": 4.1, "o": 1}, {"n": "ATACADÃO DA MEDEIRA", "v": 700.0, "p": 1, "na": 4.4, "o": 1}], "mat": [{"cat": "EPI", "v": 31871.56, "eco": 1773.13, "items": [{"n": "EPI", "o": "0326/2024", "v": 20905.32, "r": 22001.19, "e": 1095.87}, {"n": "EPI", "o": "0419/2025", "v": 2937.66, "r": 4735.76, "e": 1798.1}, {"n": "EPI", "o": "0433/2025", "v": 8028.58, "r": 6907.74, "e": -1120.84}]}, {"cat": "SUPORTES", "v": 8710.0, "eco": 1220.0, "items": [{"n": "SUPORTES", "o": "0455/2025", "v": 8710.0, "r": 9930.0, "e": 1220.0}]}, {"cat": "CABO UTP", "v": 7403.0, "eco": -277.0, "items": [{"n": "CABO UTP", "o": "0228/2023", "v": 7403.0, "r": 7126.0, "e": -277.0}]}, {"cat": "Suportes", "v": 7032.0, "eco": 0.0, "items": [{"n": "Suportes", "o": "0455/2025", "v": 7032.0, "r": 7032.0, "e": 0.0}]}, {"cat": "NOTEBOOK I5 E CELULAR", "v": 6634.4, "eco": 0.0, "items": [{"n": "NOTEBOOK I5 E CELULAR", "o": "0000/2025", "v": 6634.4, "r": 6634.4, "e": 0.0}]}, {"cat": "Escadas", "v": 5966.65, "eco": 37.36, "items": [{"n": "Escadas", "o": "0455/2025", "v": 3099.05, "r": 3448.05, "e": 349.0}, {"n": "Escadas", "o": "0326/2024", "v": 2867.6, "r": 2555.96, "e": -311.64}]}, {"cat": "Tela + locker", "v": 5585.8, "eco": 391.74, "items": [{"n": "Tela + locker", "o": "0000/2025", "v": 5585.8, "r": 5977.54, "e": 391.74}]}, {"cat": "INSUMOS PARA ESCRITORIO", "v": 5039.22, "eco": 156.93, "items": [{"n": "INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 1416.6, "r": 1573.53, "e": 156.93}, {"n": "INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 2247.21, "r": 2247.21, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 1375.41, "r": 1375.41, "e": 0.0}]}, {"cat": "UNIFORMES OPERACIONAIS", "v": 4589.0, "eco": -48.38, "items": [{"n": "UNIFORMES OPERACIONAIS", "o": "0419/2025", "v": 4589.0, "r": 4540.62, "e": -48.38}]}, {"cat": "sealtubo + abraçadeira", "v": 3006.0, "eco": 297.6, "items": [{"n": "sealtubo + abraçadeira", "o": "0228/2023", "v": 3006.0, "r": 3303.6, "e": 297.6}]}, {"cat": "abaraçadeira de nylon + fita isolante", "v": 2746.1, "eco": -277.71, "items": [{"n": "abaraçadeira de nylon + fita isolante", "o": "0228/2023", "v": 2746.1, "r": 2468.39, "e": -277.71}]}, {"cat": "CELULARES", "v": 2735.6, "eco": 0.0, "items": [{"n": "CELULARES", "o": "0000/2025", "v": 2735.6, "r": 2735.6, "e": 0.0}]}, {"cat": "TELAS Q385", "v": 2640.0, "eco": 867.4, "items": [{"n": "TELAS Q385", "o": "0433/2025", "v": 2640.0, "r": 3507.4, "e": 867.4}]}, {"cat": "PONTALETE", "v": 2400.0, "eco": -200.0, "items": [{"n": "PONTALETE", "o": "0419/2025", "v": 2400.0, "r": 2200.0, "e": -200.0}]}, {"cat": "CINTA DE ELEVAÇÃO", "v": 2101.68, "eco": 188.32, "items": [{"n": "CINTA DE ELEVAÇÃO", "o": "0419/2025", "v": 2101.68, "r": 2290.0, "e": 188.32}]}, {"cat": "PACOTE OFFICE", "v": 1699.04, "eco": 0.0, "items": [{"n": "PACOTE OFFICE", "o": "0000/2025", "v": 1699.04, "r": 1699.04, "e": 0.0}]}, {"cat": "tablet", "v": 1174.0, "eco": 1224.0, "items": [{"n": "tablet", "o": "0351/2024", "v": 587.0, "r": 1199.0, "e": 612.0}, {"n": "tablet", "o": "0455/2025", "v": 587.0, "r": 1199.0, "e": 612.0}]}, {"cat": "CIMENTO CPIII", "v": 927.0, "eco": -30.0, "items": [{"n": "CIMENTO CPIII", "o": "0433/2025", "v": 927.0, "r": 897.0, "e": -30.0}]}, {"cat": "Tabua pinus bruto - 2x20x300 cm", "v": 700.0, "eco": 410.68, "items": [{"n": "Tabua pinus bruto - 2x20x300 cm", "o": "0433/2025", "v": 700.0, "r": 1110.68, "e": 410.68}]}, {"cat": "EPC", "v": 464.18, "eco": 186.22, "items": [{"n": "EPC", "o": "0326/2024", "v": 464.18, "r": 650.4, "e": 186.22}]}, {"cat": "PENTE DE MEMÓRIA ", "v": 409.0, "eco": 0.0, "items": [{"n": "PENTE DE MEMÓRIA ", "o": "0000/2025", "v": 409.0, "r": 409.0, "e": 0.0}]}, {"cat": "TENIS E INSUMOS PARA ESCRITORIO", "v": 208.24, "eco": 31.57, "items": [{"n": "TENIS E INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 208.24, "r": 239.81, "e": 31.57}]}, {"cat": "CONECTOR", "v": 199.5, "eco": 0.3, "items": [{"n": "CONECTOR", "o": "0228/2023", "v": 199.5, "r": 199.8, "e": 0.3}]}, {"cat": "ESTRADO DE PLÁST.", "v": 105.96, "eco": 6.0, "items": [{"n": "ESTRADO DE PLÁST.", "o": "0433/2025", "v": 105.96, "r": 111.96, "e": 6.0}]}]}, "mar": {"label": "MARÇO", "req": 237085.99, "comp": 206421.31, "eco": 30664.68, "pct": 0.1293, "ped": 41, "forn": 27, "obras": 8, "nota": 4.26, "pedVal": 206423.32, "cal": [{"d": 2, "v": 35190.1}, {"d": 4, "v": 30761.35}, {"d": 5, "v": 28125.5}, {"d": 6, "v": 19380.23}, {"d": 7, "v": 3990.6}, {"d": 9, "v": 30210.37}, {"d": 10, "v": 28978.36}, {"d": 11, "v": 57.15}, {"d": 12, "v": 20377.9}, {"d": 13, "v": 4147.94}, {"d": 16, "v": 1200.0}, {"d": 20, "v": 2736.9}, {"d": 23, "v": 1049.0}, {"d": 27, "v": 217.92}], "calDays": 31, "firstDay": 0, "obrasList": [{"k": "0000/2025", "req": 70144.95, "comp": 65141.17, "eco": 5003.78, "mat": "NOTEBOOK I3", "matV": 35957.82}, {"k": "0455/2025", "req": 51979.95, "comp": 39462.64, "eco": 12517.31, "mat": "FERRAMENTAS", "matV": 12868.37}, {"k": "0419/2025", "req": 36149.96, "comp": 28838.9, "eco": 7311.06, "mat": "EPC", "matV": 21620.0}, {"k": "0326/2024", "req": 25913.25, "comp": 24979.5, "eco": 933.75, "mat": "FERRAMENTAS", "matV": 13243.37}, {"k": "0228/2023", "req": 24523.4, "comp": 22305.9, "eco": 2217.5, "mat": "CABO UTP", "matV": 19520.0}, {"k": "0351/2024", "req": 19882.24, "comp": 16762.2, "eco": 3120.04, "mat": "FERRAMENTAS", "matV": 8251.05}, {"k": "0341/2024", "req": 4958.6, "comp": 4733.6, "eco": 225.0, "mat": "UNIFORMES OPERACIONAIS", "matV": 2610.0}, {"k": "0433/2025", "req": 3533.64, "comp": 4197.4, "eco": -663.76, "mat": "caixa de passagem", "matV": 1440.0}], "topForn": [{"n": "MERCADO LIVRE", "v": 33576.87, "p": 13, "na": 4.42, "o": 4}, {"n": "AMPLO UNIFORMES", "v": 20475.8, "p": 10, "na": 4.0, "o": 5}, {"n": "MULTCABOS COMERCIO E MANUTENCAO DE REDES LTDA ", "v": 19520.0, "p": 1, "na": 4.3, "o": 1}, {"n": "MAGAZINE LUIZA", "v": 17358.42, "p": 1, "na": 4.4, "o": 1}, {"n": "PAUTA DIST.", "v": 16225.0, "p": 1, "na": 3.7, "o": 1}, {"n": "A.G SIQUEIRA", "v": 14948.0, "p": 4, "na": 4.3, "o": 2}, {"n": "NACIONAL FERROVIAS", "v": 11400.0, "p": 1, "na": 3.4, "o": 1}, {"n": "CENTER MADE", "v": 11100.0, "p": 2, "na": 4.3, "o": 1}, {"n": "IMA EPI", "v": 10140.5, "p": 2, "na": 4.9, "o": 2}, {"n": "RIPUBLIC LTDA", "v": 8620.0, "p": 1, "na": 4.3, "o": 1}, {"n": "FERRAMENTAS GERAIS", "v": 7744.85, "p": 2, "na": 4.3, "o": 2}, {"n": "GIMBA", "v": 7208.49, "p": 5, "na": 4.54, "o": 3}, {"n": "LEROY MERLIN", "v": 5394.27, "p": 2, "na": 4.0, "o": 2}, {"n": "SÓ MARCAS COMERCIAL LTDA", "v": 3314.3, "p": 1, "na": 4.3, "o": 1}, {"n": "FELAP FERRAMENTAS", "v": 2972.82, "p": 1, "na": 4.4, "o": 1}, {"n": "TUBARÃO EPI", "v": 2949.0, "p": 2, "na": 4.3, "o": 1}, {"n": "SARGON SOLUCOES ASFALTICAS LTDA (ITAQUAREIA)", "v": 2650.0, "p": 1, "na": 4.3, "o": 1}, {"n": "ULTRA MAQUINAS", "v": 1760.0, "p": 1, "na": 4.6, "o": 1}, {"n": "LOJA DO MECÂNICO", "v": 1652.8, "p": 1, "na": 4.0, "o": 1}, {"n": "ECOVERDE PRE MOLDADOS ", "v": 1440.0, "p": 1, "na": 3.7, "o": 1}, {"n": "GRUDAFORTE COMERCIO IMPORTACAO E EXPORTACAO", "v": 1290.0, "p": 1, "na": 3.6, "o": 1}, {"n": "BELA TINTAS LTDA", "v": 1200.0, "p": 1, "na": 4.3, "o": 1}, {"n": "PJ NEBLINA", "v": 1052.2, "p": 1, "na": 4.3, "o": 1}, {"n": "RISSO TRANSPORTES", "v": 1026.0, "p": 1, "na": 3.5, "o": 1}, {"n": "PROTETINTAS ", "v": 713.5, "p": 2, "na": 4.5, "o": 1}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 519.0, "p": 1, "na": 4.3, "o": 1}, {"n": "SOEDRAL SOCIEDADE ELETRICA HIDRAULICA LTDA", "v": 171.5, "p": 1, "na": 4.4, "o": 1}], "mat": [{"cat": "NOTEBOOK I3", "v": 35957.82, "eco": 4638.9, "items": [{"n": "NOTEBOOK I3", "o": "0000/2025", "v": 35957.82, "r": 40596.72, "e": 4638.9}]}, {"cat": "FERRAMENTAS", "v": 34362.79, "eco": 12533.4, "items": [{"n": "FERRAMENTAS", "o": "0326/2024", "v": 1055.0, "r": 1569.5, "e": 514.5}, {"n": "FERRAMENTAS", "o": "0326/2024", "v": 12188.37, "r": 12431.3, "e": 242.93}, {"n": "FERRAMENTAS", "o": "0351/2024", "v": 8251.05, "r": 11697.74, "e": 3446.69}, {"n": "FERRAMENTAS", "o": "0455/2025", "v": 12130.05, "r": 20491.85, "e": 8361.8}, {"n": "FERRAMENTAS", "o": "0455/2025", "v": 738.32, "r": 705.8, "e": -32.52}]}, {"cat": "EPC", "v": 21620.0, "eco": 5843.1, "items": [{"n": "EPC", "o": "0419/2025", "v": 8620.0, "r": 8900.0, "e": 280.0}, {"n": "EPC", "o": "0419/2025", "v": 1900.0, "r": 1900.0, "e": 0.0}, {"n": "EPC", "o": "0419/2025", "v": 3600.0, "r": 5750.0, "e": 2150.0}, {"n": "EPC", "o": "0419/2025", "v": 7500.0, "r": 10913.1, "e": 3413.1}]}, {"cat": "CABO UTP", "v": 19520.0, "eco": 2060.0, "items": [{"n": "CABO UTP", "o": "0228/2023", "v": 19520.0, "r": 21580.0, "e": 2060.0}]}, {"cat": "NOTEBOOK I5", "v": 16225.0, "eco": -174.75, "items": [{"n": "NOTEBOOK I5", "o": "0000/2025", "v": 16225.0, "r": 16050.25, "e": -174.75}]}, {"cat": "EPI", "v": 12949.5, "eco": -793.8, "items": [{"n": "EPI", "o": "0419/2025", "v": 1049.0, "r": 1100.0, "e": 51.0}, {"n": "EPI", "o": "0351/2024", "v": 5010.3, "r": 4562.1, "e": -448.2}, {"n": "EPI", "o": "0455/2025", "v": 6890.2, "r": 6493.6, "e": -396.6}]}, {"cat": "carrinho trolley", "v": 11400.0, "eco": 0.0, "items": [{"n": "carrinho trolley", "o": "0455/2025", "v": 11400.0, "r": 11400.0, "e": 0.0}]}, {"cat": "UNIFORMES OPERACIONAIS", "v": 10970.0, "eco": 1000.0, "items": [{"n": "UNIFORMES OPERACIONAIS", "o": "0228/2023", "v": 1732.5, "r": 1890.0, "e": 157.5}, {"n": "UNIFORMES OPERACIONAIS", "o": "0326/2024", "v": 3465.0, "r": 3780.0, "e": 315.0}, {"n": "UNIFORMES OPERACIONAIS", "o": "0341/2024", "v": 2610.0, "r": 2835.0, "e": 225.0}, {"n": "UNIFORMES OPERACIONAIS", "o": "0351/2024", "v": 1725.0, "r": 1890.0, "e": 165.0}, {"n": "UNIFORMES OPERACIONAIS", "o": "0433/2025", "v": 1437.5, "r": 1575.0, "e": 137.5}]}, {"cat": "UNIFORMES ADMINISTRATIVOS", "v": 9505.8, "eco": 0.0, "items": [{"n": "UNIFORMES ADMINISTRATIVOS", "o": "0228/2023", "v": 1053.4, "r": 1053.4, "e": 0.0}, {"n": "UNIFORMES ADMINISTRATIVOS", "o": "0326/2024", "v": 3448.0, "r": 3448.0, "e": 0.0}, {"n": "UNIFORMES ADMINISTRATIVOS", "o": "0341/2024", "v": 2123.6, "r": 2123.6, "e": 0.0}, {"n": "UNIFORMES ADMINISTRATIVOS", "o": "0351/2024", "v": 1732.4, "r": 1732.4, "e": 0.0}, {"n": "UNIFORMES ADMINISTRATIVOS", "o": "0433/2025", "v": 1148.4, "r": 1148.4, "e": 0.0}]}, {"cat": "CELULARES E CAPINHAS", "v": 5471.2, "eco": 512.88, "items": [{"n": "CELULARES E CAPINHAS", "o": "0000/2025", "v": 5471.2, "r": 5984.08, "e": 512.88}]}, {"cat": "INSUMOS PARA ESCRITORIO", "v": 4772.91, "eco": 26.75, "items": [{"n": "INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 616.99, "r": 635.69, "e": 18.7}, {"n": "INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 330.25, "r": 338.3, "e": 8.05}, {"n": "INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 79.0, "r": 79.0, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 2213.64, "r": 2213.64, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 715.05, "r": 715.05, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 217.92, "r": 217.92, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "o": "0326/2024", "v": 600.06, "r": 600.06, "e": 0.0}]}, {"cat": "KIT BOAS VINDAS", "v": 3314.3, "eco": 0.0, "items": [{"n": "KIT BOAS VINDAS", "o": "0000/2025", "v": 3314.3, "r": 3314.3, "e": 0.0}]}, {"cat": "escadas", "v": 2972.82, "eco": -138.68, "items": [{"n": "escadas", "o": "0326/2024", "v": 2972.82, "r": 2834.14, "e": -138.68}]}, {"cat": "MATERIAIS para pintura", "v": 2749.0, "eco": 3745.4, "items": [{"n": "MATERIAIS para pintura", "o": "0455/2025", "v": 2749.0, "r": 6494.4, "e": 3745.4}]}, {"cat": "REPARADOR DE ASFALTO", "v": 2650.0, "eco": 1150.0, "items": [{"n": "REPARADOR DE ASFALTO", "o": "0419/2025", "v": 2650.0, "r": 3800.0, "e": 1150.0}]}, {"cat": "Fio veda rosca 55", "v": 2625.0, "eco": 374.4, "items": [{"n": "Fio veda rosca 55", "o": "0455/2025", "v": 2625.0, "r": 2999.4, "e": 374.4}]}, {"cat": "MAT. DE LIMPEZA P/ ESCRITÓRIO", "v": 2467.7, "eco": -40.24, "items": [{"n": "MAT. DE LIMPEZA P/ ESCRITÓRIO", "o": "0419/2025", "v": 2467.7, "r": 2427.46, "e": -40.24}]}, {"cat": "Monitor+Impressora+Tintas", "v": 1860.62, "eco": 157.03, "items": [{"n": "Monitor+Impressora+Tintas", "o": "0455/2025", "v": 1860.62, "r": 2017.65, "e": 157.03}]}, {"cat": "caixa de passagem", "v": 1440.0, "eco": -884.48, "items": [{"n": "caixa de passagem", "o": "0433/2025", "v": 1440.0, "r": 555.52, "e": -884.48}]}, {"cat": "MATERIAL PARA HIGIENE", "v": 1250.25, "eco": 0.0, "items": [{"n": "MATERIAL PARA HIGIENE", "o": "0326/2024", "v": 1250.25, "r": 1250.25, "e": 0.0}]}, {"cat": "ILUMINAÇÃO NOTURNA", "v": 1052.2, "eco": 307.2, "items": [{"n": "ILUMINAÇÃO NOTURNA", "o": "0419/2025", "v": 1052.2, "r": 1359.4, "e": 307.2}]}, {"cat": "frete carrinho trolley (risso)", "v": 1026.0, "eco": 351.25, "items": [{"n": "frete carrinho trolley (risso)", "o": "0455/2025", "v": 1026.0, "r": 1377.25, "e": 351.25}]}, {"cat": "ELETRODUTO CORRUGADO", "v": 171.5, "eco": 83.22, "items": [{"n": "ELETRODUTO CORRUGADO", "o": "0433/2025", "v": 171.5, "r": 254.72, "e": 83.22}]}, {"cat": "compra de tablet diferença de valor ", "v": 86.9, "eco": -86.9, "items": [{"n": "compra de tablet diferença de valor ", "o": "0455/2025", "v": 43.45, "r": 0.0, "e": -43.45}, {"n": "compra de tablet diferença de valor ", "o": "0351/2024", "v": 43.45, "r": 0.0, "e": -43.45}]}]}, "abr": {"label": "ABRIL", "req": 210505.83, "comp": 192418.34, "eco": 18087.49, "pct": 0.0859, "ped": 31, "forn": 27, "obras": 8, "nota": 4.29, "pedVal": 259093.56, "cal": [{"d": 1, "v": 39844.12}, {"d": 2, "v": 1517.62}, {"d": 6, "v": 6475.0}, {"d": 7, "v": 23893.85}, {"d": 9, "v": 1095.0}, {"d": 10, "v": 4317.0}, {"d": 14, "v": 6919.0}, {"d": 15, "v": 11542.2}, {"d": 16, "v": 59247.49}, {"d": 17, "v": 11528.33}, {"d": 22, "v": 732.88}, {"d": 23, "v": 2335.02}, {"d": 24, "v": 24776.5}, {"d": 27, "v": 55540.22}, {"d": 28, "v": 207.6}, {"d": 30, "v": 9121.73}], "calDays": 30, "firstDay": 3, "obrasList": [{"k": "0326/2024", "req": 85604.8, "comp": 74410.19, "eco": 11194.61, "mat": "ferramentas", "matV": 40287.36}, {"k": "0478/2025", "req": 68670.89, "comp": 62889.61, "eco": 5781.28, "mat": "EPI", "matV": 23004.5}, {"k": "0419/2025", "req": 22961.45, "comp": 20924.52, "eco": 2036.93, "mat": "ASFALTO FRIO", "matV": 8975.0}, {"k": "0341/2024", "req": 9598.85, "comp": 9598.85, "eco": 0.0, "mat": "TROCA DE CABOS", "matV": 9598.85}, {"k": "0455/2025", "req": 9120.64, "comp": 8891.15, "eco": 229.49, "mat": "EPI", "matV": 6391.15}, {"k": "0351/2024", "req": 9233.51, "comp": 7249.62, "eco": 1983.89, "mat": "EPI", "matV": 4337.0}, {"k": "0000/2025", "req": 1902.69, "comp": 4813.9, "eco": -2911.21, "mat": "MOVEIS PARA ESCRITORIO", "matV": 4057.04}, {"k": "0433/2025", "req": 3413.0, "comp": 3640.5, "eco": -227.5, "mat": "CIMENTO CPIII", "matV": 1845.0}], "topForn": [{"n": "MECALTEC INDUSTRIA E COMERCIO LTDA", "v": 57407.0, "p": 1, "na": 3.8, "o": 1}, {"n": "IMA EPI", "v": 45996.2, "p": 5, "na": 4.36, "o": 5}, {"n": "A.G SIQUEIRA", "v": 26900.7, "p": 4, "na": 4.4, "o": 3}, {"n": "MERCADO LIVRE", "v": 21422.42, "p": 9, "na": 4.36, "o": 5}, {"n": "VIA SAFE SINALIZAÇÃO", "v": 14295.0, "p": 1, "na": 4.3, "o": 1}, {"n": "FERRAMENTAS GERAIS", "v": 13534.96, "p": 1, "na": 4.3, "o": 1}, {"n": "GIMBA", "v": 12291.67, "p": 4, "na": 4.35, "o": 2}, {"n": "IBRAC INDUSTRIA BRASILEIRA DE CONDUTORES LTDA", "v": 9598.85, "p": 1, "na": 3.6, "o": 1}, {"n": "TRIANE SBO LTDA", "v": 9400.0, "p": 1, "na": 4.3, "o": 1}, {"n": "SARGON SOLUCOES ASFALTICAS LTDA (ITAQUAREIA)", "v": 8975.0, "p": 2, "na": 4.5, "o": 1}, {"n": "TUBARÃO EPI", "v": 5879.5, "p": 3, "na": 4.43, "o": 2}, {"n": "AMPLO UNIFORMES", "v": 4317.0, "p": 1, "na": 4.0, "o": 1}, {"n": "TESTBRASIL INSTRUMENTOS E EQUIPAMENTOS ", "v": 4170.0, "p": 1, "na": 4.0, "o": 1}, {"n": "ACRO CABOS DE ACO INDUSTRIA E COMERCIO LTDA", "v": 3609.82, "p": 1, "na": 4.3, "o": 1}, {"n": "BEM FICA MOVEIS DE ACO LTDA (MULTI AÇO FLEX)", "v": 3119.96, "p": 2, "na": 4.3, "o": 2}, {"n": "SÃO PEDRO SHOPPING DA CONSTRUÇÃO", "v": 2940.0, "p": 2, "na": 4.4, "o": 2}, {"n": "FELAP FERRAMENTAS", "v": 2360.0, "p": 1, "na": 4.3, "o": 1}, {"n": "FÁCIL PERSIANAS", "v": 2311.04, "p": 1, "na": 4.3, "o": 1}, {"n": "BONETE", "v": 2277.84, "p": 1, "na": 4.3, "o": 1}, {"n": "BLOCOMIX FABRICACAO DE ARTEFATOS DE CIMENTO LTDA", "v": 1795.5, "p": 1, "na": 4.4, "o": 1}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 1531.7, "p": 1, "na": 4.35, "o": 1}, {"n": "GRUDAFORTE COMERCIO IMPORTACAO E EXPORTACAO", "v": 1395.0, "p": 1, "na": 3.3, "o": 1}, {"n": "BELA TINTAS LTDA", "v": 1368.0, "p": 1, "na": 4.4, "o": 1}, {"n": "MONIQUE CORREA SOARES (REQUINTE LAZER)", "v": 839.0, "p": 1, "na": 4.1, "o": 1}, {"n": "ULTRA MAQUINAS", "v": 513.7, "p": 1, "na": 4.3, "o": 1}, {"n": "SAFARI DISTRIBUIDORA", "v": 501.0, "p": 1, "na": 4.1, "o": 1}, {"n": "A.N.T. FERRAMENTAS - COMERCIAL E IMPORTADORA LTDA", "v": 342.7, "p": 1, "na": 4.3, "o": 1}], "mat": [{"cat": "EPI", "v": 57386.1, "eco": 8401.7, "items": [{"n": "EPI", "o": "0326/2024", "v": 20369.85, "r": 22313.16, "e": 1943.31}, {"n": "EPI", "o": "0419/2025", "v": 2470.0, "r": 2398.0, "e": -72.0}, {"n": "EPI", "o": "0351/2024", "v": 4337.0, "r": 4430.65, "e": 93.65}, {"n": "EPI", "o": "0455/2025", "v": 6391.15, "r": 6567.79, "e": 176.64}, {"n": "EPI", "o": "0326/2024", "v": 813.6, "r": 1235.0, "e": 421.4}, {"n": "EPI", "o": "0478/2025", "v": 23004.5, "r": 28843.2, "e": 5838.7}]}, {"cat": "ferramentas", "v": 41362.06, "eco": 8822.11, "items": [{"n": "ferramentas", "o": "0419/2025", "v": 1074.7, "r": 1731.22, "e": 656.52}, {"n": "ferramentas", "o": "0326/2024", "v": 40287.36, "r": 48452.95, "e": 8165.59}]}, {"cat": "EPC/AREA EXTERNA", "v": 17117.34, "eco": -397.63, "items": [{"n": "EPC/AREA EXTERNA", "o": "0478/2025", "v": 17117.34, "r": 16719.71, "e": -397.63}]}, {"cat": "MOVEIS PARA ESCRITORIO", "v": 13075.01, "eco": -2522.2, "items": [{"n": "MOVEIS PARA ESCRITORIO", "o": "0000/2025", "v": 4057.04, "r": 1145.83, "e": -2911.21}, {"n": "MOVEIS PARA ESCRITORIO", "o": "0478/2025", "v": 9017.97, "r": 9406.98, "e": 389.01}]}, {"cat": "TROCA DE CABOS", "v": 9598.85, "eco": 0.0, "items": [{"n": "TROCA DE CABOS", "o": "0341/2024", "v": 9598.85, "r": 9598.85, "e": 0.0}]}, {"cat": "UNIFORMES OPERACIONAIS", "v": 9400.0, "eco": -200.0, "items": [{"n": "UNIFORMES OPERACIONAIS", "o": "0478/2025", "v": 9400.0, "r": 9200.0, "e": -200.0}]}, {"cat": "ASFALTO FRIO", "v": 8975.0, "eco": 1625.0, "items": [{"n": "ASFALTO FRIO", "o": "0419/2025", "v": 3975.0, "r": 3975.0, "e": 0.0}, {"n": "ASFALTO FRIO", "o": "0419/2025", "v": 5000.0, "r": 6625.0, "e": 1625.0}]}, {"cat": "MATERIAIS PARA SALA DE REUNIÃO", "v": 6321.38, "eco": 1408.21, "items": [{"n": "MATERIAIS PARA SALA DE REUNIÃO", "o": "0326/2024", "v": 6321.38, "r": 7729.59, "e": 1408.21}]}, {"cat": "ESCADAS", "v": 5250.0, "eco": -1650.5, "items": [{"n": "ESCADAS", "o": "0326/2024", "v": 5250.0, "r": 3599.5, "e": -1650.5}]}, {"cat": "BAFOMETRO", "v": 4349.8, "eco": 151.2, "items": [{"n": "BAFOMETRO", "o": "0478/2025", "v": 4349.8, "r": 4501.0, "e": 151.2}]}, {"cat": "MATERIAL DE IÇAMENTO DE CARGA", "v": 3609.82, "eco": 23.83, "items": [{"n": "MATERIAL DE IÇAMENTO DE CARGA", "o": "0419/2025", "v": 3609.82, "r": 3633.65, "e": 23.83}]}, {"cat": "compra de alavanca + escada", "v": 2861.0, "eco": -131.42, "items": [{"n": "compra de alavanca + escada", "o": "0419/2025", "v": 2861.0, "r": 2729.58, "e": -131.42}]}, {"cat": "ARALDITE", "v": 2500.0, "eco": 52.85, "items": [{"n": "ARALDITE", "o": "0455/2025", "v": 2500.0, "r": 2552.85, "e": 52.85}]}, {"cat": "CIMENTO CPIII", "v": 1845.0, "eco": -350.0, "items": [{"n": "CIMENTO CPIII", "o": "0433/2025", "v": 1845.0, "r": 1495.0, "e": -350.0}]}, {"cat": "BLOCOS DE CONCRETO", "v": 1795.5, "eco": 122.5, "items": [{"n": "BLOCOS DE CONCRETO", "o": "0433/2025", "v": 1795.5, "r": 1918.0, "e": 122.5}]}, {"cat": "INSUMOS", "v": 1517.62, "eco": 790.24, "items": [{"n": "INSUMOS", "o": "0351/2024", "v": 1517.62, "r": 2307.86, "e": 790.24}]}, {"cat": "Neoprene", "v": 1395.0, "eco": 1100.0, "items": [{"n": "Neoprene", "o": "0351/2024", "v": 1395.0, "r": 2495.0, "e": 1100.0}]}, {"cat": "materiais para serigrafia e galvite", "v": 1368.0, "eco": 906.6, "items": [{"n": "materiais para serigrafia e galvite", "o": "0326/2024", "v": 1368.0, "r": 2274.6, "e": 906.6}]}, {"cat": "CIMENTO CPII", "v": 1095.0, "eco": -45.0, "items": [{"n": "CIMENTO CPII", "o": "0419/2025", "v": 1095.0, "r": 1050.0, "e": -45.0}]}, {"cat": "COMPRA DE PISOS ESPECIAL", "v": 839.0, "eco": -20.0, "items": [{"n": "COMPRA DE PISOS ESPECIAL", "o": "0419/2025", "v": 839.0, "r": 819.0, "e": -20.0}]}, {"cat": "INSUMOS PARA ESCRITORIO", "v": 756.86, "eco": 0.0, "items": [{"n": "INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 756.86, "r": 756.86, "e": 0.0}]}]}, "mai": {"label": "MAIO", "req": 108938.05, "comp": 101156.3, "eco": 7781.75, "pct": 0.0714, "ped": 19, "forn": 14, "obras": 5, "nota": 4.36, "pedVal": 101156.3, "cal": [{"d": 4, "v": 310.0}, {"d": 5, "v": 20145.97}, {"d": 6, "v": 503.6}, {"d": 7, "v": 174.57}, {"d": 8, "v": 1273.43}, {"d": 11, "v": 6071.5}, {"d": 12, "v": 4172.85}, {"d": 13, "v": 8824.87}, {"d": 14, "v": 7860.0}, {"d": 15, "v": 272.15}, {"d": 18, "v": 11948.02}, {"d": 20, "v": 28069.09}, {"d": 22, "v": 2672.57}, {"d": 26, "v": 1121.95}, {"d": 27, "v": 2885.93}, {"d": 28, "v": 4849.8}], "calDays": 31, "firstDay": 5, "obrasList": [{"k": "0478/2025", "req": 50415.86, "comp": 48985.28, "eco": 1430.58, "mat": "ferramentas", "matV": 25259.24}, {"k": "0326/2024", "req": 33294.08, "comp": 30483.77, "eco": 2810.31, "mat": "ferramentas", "matV": 18348.22}, {"k": "0000/2025", "req": 9968.7, "comp": 9940.27, "eco": 28.43, "mat": "INSUMOS PARA ESCRITORIO", "matV": 3844.16}, {"k": "0419/2025", "req": 9344.35, "comp": 7273.43, "eco": 2070.92, "mat": "ASFALTO FRIO", "matV": 6000.0}, {"k": "0455/2025", "req": 5915.06, "comp": 4473.55, "eco": 1441.51, "mat": "EPI", "matV": 4473.55}], "topForn": [{"n": "MERCADO LIVRE", "v": 23909.26, "p": 11, "na": 4.41, "o": 3}, {"n": "A.G SIQUEIRA", "v": 21478.3, "p": 3, "na": 4.3, "o": 2}, {"n": "CROSSFOX COMERCIO DE CONDUTORES", "v": 10200.0, "p": 1, "na": 4.4, "o": 1}, {"n": "CENTER MADE", "v": 7860.0, "p": 1, "na": 4.3, "o": 1}, {"n": "FERRAMENTAS GERAIS", "v": 7751.38, "p": 1, "na": 4.3, "o": 1}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 6592.35, "p": 1, "na": 4.3, "o": 1}, {"n": "SARGON SOLUCOES ASFALTICAS LTDA (ITAQUAREIA)", "v": 6000.0, "p": 1, "na": 4.7, "o": 1}, {"n": "GIMBA", "v": 5206.97, "p": 4, "na": 4.42, "o": 3}, {"n": "BEM FICA MOVEIS DE ACO LTDA (MULTI AÇO FLEX)", "v": 4649.95, "p": 1, "na": 4.2, "o": 1}, {"n": "IMA EPI", "v": 2907.3, "p": 1, "na": 4.3, "o": 1}, {"n": "SORBDOM COMERCIO DE MATERIAIS ", "v": 2193.44, "p": 1, "na": 4.3, "o": 1}, {"n": "TUBARÃO EPI", "v": 1566.25, "p": 1, "na": 4.3, "o": 1}, {"n": "4CLIMB ESPORTES LTDA", "v": 503.6, "p": 1, "na": 3.7, "o": 1}, {"n": "BONETE", "v": 337.5, "p": 1, "na": 4.3, "o": 1}], "mat": [{"cat": "ferramentas", "v": 43607.46, "eco": 6397.13, "items": [{"n": "ferramentas", "o": "0478/2025", "v": 25259.24, "r": 29210.42, "e": 3951.18}, {"n": "ferramentas", "o": "0326/2024", "v": 18348.22, "r": 20794.17, "e": 2445.95}]}, {"cat": "SPLIBOLT", "v": 10200.0, "eco": 0.0, "items": [{"n": "SPLIBOLT", "o": "0326/2024", "v": 10200.0, "r": 10200.0, "e": 0.0}]}, {"cat": "INSUMOS PARA ESCRITORIO", "v": 9290.44, "eco": 1167.06, "items": [{"n": "INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 648.64, "r": 948.87, "e": 300.23}, {"n": "INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 309.59, "r": 309.59, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "o": "0419/2025", "v": 1273.43, "r": 1394.35, "e": 120.92}, {"n": "INSUMOS PARA ESCRITORIO", "o": "0478/2025", "v": 4172.85, "r": 4918.76, "e": 745.91}, {"n": "INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 2612.34, "r": 2612.34, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 273.59, "r": 273.59, "e": 0.0}]}, {"cat": "tapume", "v": 7860.0, "eco": -3360.0, "items": [{"n": "tapume", "o": "0478/2025", "v": 7860.0, "r": 4500.0, "e": -3360.0}]}, {"cat": "ASFALTO FRIO", "v": 6000.0, "eco": 1950.0, "items": [{"n": "ASFALTO FRIO", "o": "0419/2025", "v": 6000.0, "r": 7950.0, "e": 1950.0}]}, {"cat": "EPI", "v": 5287.15, "eco": 1862.91, "items": [{"n": "EPI", "o": "0326/2024", "v": 813.6, "r": 1235.0, "e": 421.4}, {"n": "EPI", "o": "0455/2025", "v": 4473.55, "r": 5915.06, "e": 1441.51}]}, {"cat": "Bebedouro de Água", "v": 4849.8, "eco": 150.0, "items": [{"n": "Bebedouro de Água", "o": "0478/2025", "v": 4849.8, "r": 4999.8, "e": 150.0}]}, {"cat": "armario alojamento", "v": 4649.95, "eco": 50.05, "items": [{"n": "armario alojamento", "o": "0478/2025", "v": 4649.95, "r": 4700.0, "e": 50.05}]}, {"cat": "MONITOR+CADEIRA", "v": 3097.02, "eco": -272.15, "items": [{"n": "MONITOR+CADEIRA", "o": "0000/2025", "v": 3097.02, "r": 2824.87, "e": -272.15}]}, {"cat": "MONITOR", "v": 2824.52, "eco": 0.35, "items": [{"n": "MONITOR", "o": "0000/2025", "v": 2824.52, "r": 2824.87, "e": 0.35}]}, {"cat": "KIT MITIGAÇÃO", "v": 2193.44, "eco": -106.56, "items": [{"n": "KIT MITIGAÇÃO", "o": "0478/2025", "v": 2193.44, "r": 2086.88, "e": -106.56}]}, {"cat": "material de limpeza", "v": 1121.95, "eco": -57.04, "items": [{"n": "material de limpeza", "o": "0326/2024", "v": 1121.95, "r": 1064.91, "e": -57.04}]}, {"cat": "WALKTALK", "v": 174.57, "eco": 0.0, "items": [{"n": "WALKTALK", "o": "0000/2025", "v": 174.57, "r": 174.57, "e": 0.0}]}]}, "jun": {"label": "JUNHO", "req": 431035.21, "comp": 274686.09, "eco": 156349.12, "pct": 0.3627, "ped": 23, "forn": 24, "obras": 8, "nota": 4.38, "pedVal": 274686.09, "cal": [{"d": 1, "v": 4692.44}, {"d": 2, "v": 7106.05}, {"d": 3, "v": 9925.53}, {"d": 5, "v": 1149.52}, {"d": 10, "v": 3708.65}, {"d": 12, "v": 12000.0}, {"d": 15, "v": 19503.86}, {"d": 17, "v": 22740.98}, {"d": 18, "v": 1789.38}, {"d": 19, "v": 4420.0}, {"d": 22, "v": 2800.0}, {"d": 23, "v": 115637.19}, {"d": 24, "v": 23707.69}, {"d": 25, "v": 18488.13}, {"d": 26, "v": 23600.0}, {"d": 29, "v": 3416.67}], "calDays": 30, "firstDay": 1, "obrasList": [{"k": "0351/2024", "req": 291269.46, "comp": 138465.45, "eco": 152804.01, "mat": "DISCIPLINA DE INCÊNDIO", "matV": 74420.14}, {"k": "0341/2024", "req": 88864.79, "comp": 88864.79, "eco": 0.0, "mat": "PEÇAS BARRILETE", "matV": 88864.79}, {"k": "0419/2025", "req": 23795.08, "comp": 25491.88, "eco": -1696.8, "mat": "PRANCHAS E ESTRONCAS PARA ESCORAMENTO", "matV": 12000.0}, {"k": "0000/2025", "req": 19389.27, "comp": 14482.95, "eco": 4906.32, "mat": "NOTEBOOKS", "matV": 6441.36}, {"k": "0478/2025", "req": 4912.5, "comp": 4912.5, "eco": 0.0, "mat": "EPI", "matV": 4912.5}, {"k": "0326/2024", "req": 1579.4, "comp": 1243.81, "eco": 335.59, "mat": "INSUMOS PARA ESCRITORIO", "matV": 1243.81}, {"k": "0527/2026", "req": 664.69, "comp": 664.69, "eco": 0.0, "mat": "MEDIDORES DE PRESSURIZAÇÃO", "matV": 664.69}, {"k": "0455/2025", "req": 560.02, "comp": 560.02, "eco": 0.0, "mat": "EPI", "matV": 560.02}], "topForn": [{"n": "ATLAS COPCO BRASIL LTDA", "v": 88864.79, "p": 1, "na": 4.3, "o": 1}, {"n": "HIDRAULICA POTENZA COMERCIO E INDUSTRIA LTDA", "v": 42244.84, "p": 2, "na": 4.7, "o": 1}, {"n": "MERC COMERCIO DE MATERIAIS PARA CONSTRUCAO LTDA", "v": 21908.98, "p": 1, "na": 4.6, "o": 1}, {"n": "A.G SIQUEIRA", "v": 19089.9, "p": 3, "na": 4.63, "o": 1}, {"n": "VALEFLUX INDÚSTRIA E COMÉRCIO DE VÁLVULAS LTDA", "v": 16400.0, "p": 1, "na": 3.7, "o": 1}, {"n": "BERMAD BRASIL INDUSTRIA DE VALVULAS LTDA", "v": 16136.7, "p": 1, "na": 4.3, "o": 1}, {"n": "MERCADO LIVRE", "v": 14111.05, "p": 5, "na": 4.3, "o": 2}, {"n": "CENTER MADE", "v": 9000.0, "p": 1, "na": 4.3, "o": 1}, {"n": "EKOPREM INDUSTRIA", "v": 7200.0, "p": 1, "na": 3.8, "o": 1}, {"n": "VTK TUBOS E CONEXOES EM ACO LTDA", "v": 4863.42, "p": 1, "na": 4.3, "o": 1}, {"n": "RUBBERPLASTIC COM. DE BORRACHAS E PLÁSTICOS LTDA", "v": 4420.0, "p": 1, "na": 4.3, "o": 1}, {"n": "IMA EPI", "v": 4323.0, "p": 1, "na": 4.3, "o": 1}, {"n": "GIMBA", "v": 4081.19, "p": 3, "na": 4.3, "o": 2}, {"n": "FRANJAÇO INDUSTRIA DE FLANGES", "v": 3708.65, "p": 1, "na": 4.3, "o": 1}, {"n": "MADEREIRA CAMPO VERDE", "v": 3000.0, "p": 1, "na": 4.3, "o": 1}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 2763.63, "p": 2, "na": 4.55, "o": 1}, {"n": "SÃO PEDRO SHOPPING DA CONSTRUÇÃO", "v": 2583.23, "p": 2, "na": 4.4, "o": 1}, {"n": "A.N.T. FERRAMENTAS - COMERCIAL E IMPORTADORA LTDA", "v": 2368.5, "p": 1, "na": 4.3, "o": 1}, {"n": "CASA MIMOSA", "v": 2345.14, "p": 1, "na": 4.3, "o": 1}, {"n": "SÓ MARCAS COMERCIAL LTDA", "v": 1768.6, "p": 1, "na": 4.6, "o": 1}, {"n": "LEFOO", "v": 1329.38, "p": 2, "na": 4.3, "o": 2}, {"n": "ASTRO EPI", "v": 1149.52, "p": 2, "na": 4.3, "o": 2}, {"n": "MILCORTE FERRAMENTAS LTDA", "v": 545.57, "p": 1, "na": 4.7, "o": 1}, {"n": "ICS SOLULÇÃO AMBIENTAL", "v": 480.0, "p": 1, "na": 4.6, "o": 1}], "mat": [{"cat": "PEÇAS BARRILETE", "v": 88864.79, "eco": 0.0, "items": [{"n": "PEÇAS BARRILETE", "o": "0341/2024", "v": 88864.79, "r": 88864.79, "e": 0.0}]}, {"cat": "DISCIPLINA DE INCÊNDIO", "v": 74420.14, "eco": 110014.54, "items": [{"n": "DISCIPLINA DE INCÊNDIO", "o": "0351/2024", "v": 74420.14, "r": 184434.68, "e": 110014.54}]}, {"cat": "MATERIAIS COMPLEMENTARES LM-D", "v": 29128.98, "eco": 29959.68, "items": [{"n": "MATERIAIS COMPLEMENTARES LM-D", "o": "0351/2024", "v": 29128.98, "r": 59088.66, "e": 29959.68}]}, {"cat": "FERRAMENTAS", "v": 24767.85, "eco": 10095.17, "items": [{"n": "FERRAMENTAS", "o": "0351/2024", "v": 2933.9, "r": 3172.87, "e": 238.97}, {"n": "FERRAMENTAS", "o": "0351/2024", "v": 21833.95, "r": 31690.15, "e": 9856.2}]}, {"cat": "PRANCHAS E ESTRONCAS PARA ESCORAMENTO", "v": 12000.0, "eco": -1760.0, "items": [{"n": "PRANCHAS E ESTRONCAS PARA ESCORAMENTO", "o": "0419/2025", "v": 12000.0, "r": 10240.0, "e": -1760.0}]}, {"cat": "FLANGES DE COBRE", "v": 8938.22, "eco": 1090.47, "items": [{"n": "FLANGES DE COBRE", "o": "0351/2024", "v": 8938.22, "r": 10028.69, "e": 1090.47}]}, {"cat": "BARREIRA DE CONCRETO (NEW JERSEY)", "v": 7200.0, "eco": 0.0, "items": [{"n": "BARREIRA DE CONCRETO (NEW JERSEY)", "o": "0419/2025", "v": 7200.0, "r": 7200.0, "e": 0.0}]}, {"cat": "NOTEBOOKS", "v": 6441.36, "eco": 4906.32, "items": [{"n": "NOTEBOOKS", "o": "0000/2025", "v": 6441.36, "r": 11347.68, "e": 4906.32}]}, {"cat": "EPI", "v": 5472.52, "eco": 0.0, "items": [{"n": "EPI", "o": "0455/2025", "v": 560.02, "r": 560.02, "e": 0.0}, {"n": "EPI", "o": "0478/2025", "v": 4912.5, "r": 4912.5, "e": 0.0}]}, {"cat": "INSUMOS PARA ESCRITORIO", "v": 4592.96, "eco": 335.59, "items": [{"n": "INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 85.4, "r": 85.4, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "o": "0000/2025", "v": 3263.75, "r": 3263.75, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "o": "0326/2024", "v": 1243.81, "r": 1579.4, "e": 335.59}]}, {"cat": "FRANJAÇO", "v": 3708.65, "eco": 0.0, "items": [{"n": "FRANJAÇO", "o": "0419/2025", "v": 3708.65, "r": 3708.65, "e": 0.0}]}, {"cat": "COMPRA DE CALÇAS", "v": 2443.84, "eco": 0.0, "items": [{"n": "COMPRA DE CALÇAS", "o": "0000/2025", "v": 2443.84, "r": 2443.84, "e": 0.0}]}, {"cat": "COMPRA DE AÇO PARA O MURO DE DIVISA", "v": 1905.23, "eco": 2.2, "items": [{"n": "COMPRA DE AÇO PARA O MURO DE DIVISA", "o": "0419/2025", "v": 1905.23, "r": 1907.43, "e": 2.2}]}, {"cat": "KIT BOAS VINDAS", "v": 1768.6, "eco": 0.0, "items": [{"n": "KIT BOAS VINDAS", "o": "0000/2025", "v": 1768.6, "r": 1768.6, "e": 0.0}]}, {"cat": "MEDIDORES DE PRESSURIZAÇÃO", "v": 1329.38, "eco": 1452.92, "items": [{"n": "MEDIDORES DE PRESSURIZAÇÃO", "o": "0351/2024", "v": 664.69, "r": 2117.61, "e": 1452.92}, {"n": "MEDIDORES DE PRESSURIZAÇÃO", "o": "0527/2026", "v": 664.69, "r": 664.69, "e": 0.0}]}, {"cat": "CIMENTO CPIII", "v": 678.0, "eco": 61.0, "items": [{"n": "CIMENTO CPIII", "o": "0419/2025", "v": 678.0, "r": 739.0, "e": 61.0}]}, {"cat": "FERRAMENTA", "v": 545.57, "eco": 191.23, "items": [{"n": "FERRAMENTA", "o": "0351/2024", "v": 545.57, "r": 736.8, "e": 191.23}]}, {"cat": "DESCARTE DE MATERIAL (UNIFORMES E EPIS)", "v": 480.0, "eco": 0.0, "items": [{"n": "DESCARTE DE MATERIAL (UNIFORMES E EPIS)", "o": "0000/2025", "v": 480.0, "r": 480.0, "e": 0.0}]}]}};
+const Q1 = {"label": "2026", "req": 1261676.06, "comp": 1020979.75, "eco": 240696.31, "ped": 110, "forn": 71, "obras": 11, "nota": 4.3, "pct": 0.1908};
+const EVO = [{"mes": "JAN", "req": 163804.89, "comp": 141949.78, "eco": 21855.11, "pct": 13.34}, {"mes": "FEV", "req": 110306.09, "comp": 104347.93, "eco": 5958.16, "pct": 5.4}, {"mes": "MAR", "req": 237085.99, "comp": 206421.31, "eco": 30664.68, "pct": 12.93}, {"mes": "ABR", "req": 210505.83, "comp": 192418.34, "eco": 18087.49, "pct": 8.59}, {"mes": "MAI", "req": 108938.05, "comp": 101156.3, "eco": 7781.75, "pct": 7.14}, {"mes": "JUN", "req": 431035.21, "comp": 274686.09, "eco": 156349.12, "pct": 36.27}];
+const ML_EVO = [{"mes": "JAN", "pct": 26.91, "v": 38194.42, "total": 141949.78}, {"mes": "FEV", "pct": 29.37, "v": 30650.99, "total": 104347.93}, {"mes": "MAR", "pct": 16.27, "v": 33576.87, "total": 206423.32}, {"mes": "ABR", "pct": 8.27, "v": 21422.42, "total": 259093.56}, {"mes": "MAI", "pct": 23.64, "v": 23909.26, "total": 101156.3}, {"mes": "JUN", "pct": 5.14, "v": 14111.05, "total": 274686.09}];
+const FORN_RANK = {"jan": [{"n": "MERCADO LIVRE", "v": 38194.42, "p": 9, "na": 4.2, "o": 6}, {"n": "B.G.B COMERCIO DE AREIA", "v": 25200.0, "p": 1, "na": 3.4, "o": 1}, {"n": "NACIONAL FERROVIAS", "v": 15200.0, "p": 1, "na": 3.4, "o": 1}, {"n": "REAL PERFIL INDÚSTRIA E COMÉRCIO LTDA", "v": 8788.2, "p": 2, "na": 4.55, "o": 2}, {"n": "SR SERRALHERIA LTDA", "v": 7395.0, "p": 1, "na": 3.8, "o": 1}, {"n": "A.G SIQUEIRA", "v": 6783.2, "p": 2, "na": 4.65, "o": 2}, {"n": "AMPLO UNIFORMES", "v": 6006.1, "p": 1, "na": 4.0, "o": 1}, {"n": "ULTRA MAQUINAS", "v": 4840.0, "p": 1, "na": 3.7, "o": 1}, {"n": "MADEREIRA CAMPO VERDE", "v": 4600.0, "p": 1, "na": 4.3, "o": 1}, {"n": "MAXXI POSTES", "v": 3676.5, "p": 1, "na": 4.0, "o": 1}, {"n": "TUBARÃO EPI", "v": 3616.0, "p": 2, "na": 4.3, "o": 2}, {"n": "OBRAMAX", "v": 2820.05, "p": 2, "na": 4.3, "o": 2}, {"n": "CASA MIMOSA", "v": 2508.36, "p": 1, "na": 4.3, "o": 1}, {"n": "SAFARI DISTRIBUIDORA", "v": 2418.6, "p": 2, "na": 4.3, "o": 2}, {"n": "DISPAN", "v": 1610.0, "p": 1, "na": 4.7, "o": 1}, {"n": "BLOCOS DUCEMILTON RODRIGUES", "v": 1608.84, "p": 1, "na": 3.4, "o": 1}, {"n": "RISSO TRANSPORTES", "v": 1377.25, "p": 1, "na": 3.5, "o": 1}, {"n": "GRUDAFORTE COMERCIO IMPORTACAO E EXPORTACAO", "v": 1195.0, "p": 1, "na": 3.9, "o": 1}, {"n": "LEROY MERLIN", "v": 1174.46, "p": 1, "na": 4.3, "o": 1}, {"n": "SÃO PEDRO SHOPPING DA CONSTRUÇÃO", "v": 897.0, "p": 1, "na": 3.8, "o": 1}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 749.1, "p": 1, "na": 4.3, "o": 1}, {"n": "PROTETINTAS ", "v": 479.5, "p": 1, "na": 4.3, "o": 1}, {"n": "EVANILDO DOS SANTOS PEREIRA (FRETE POSTES)", "v": 478.0, "p": 1, "na": 3.8, "o": 1}, {"n": "PJ NEBLINA", "v": 334.2, "p": 1, "na": 4.4, "o": 1}], "fev": [{"n": "IMA EPI", "v": 31981.02, "p": 4, "na": 4.75, "o": 3}, {"n": "MERCADO LIVRE", "v": 30650.99, "p": 18, "na": 4.39, "o": 7}, {"n": "REAL PERFIL INDÚSTRIA E COMÉRCIO LTDA", "v": 10782.0, "p": 2, "na": 4.65, "o": 1}, {"n": "DISPAN", "v": 4960.0, "p": 1, "na": 4.5, "o": 1}, {"n": "INN GRIFFE", "v": 4589.0, "p": 1, "na": 4.1, "o": 1}, {"n": "MAGAZINE LUIZA", "v": 4191.0, "p": 2, "na": 4.3, "o": 2}, {"n": "GIMBA", "v": 3345.97, "p": 2, "na": 4.4, "o": 1}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 3006.0, "p": 1, "na": 4.3, "o": 1}, {"n": "UDIAÇO COM. E IND. DE FERRO E AÇO LTDA", "v": 2640.0, "p": 1, "na": 4.6, "o": 1}, {"n": "MADEREIRA CAMPO VERDE", "v": 2400.0, "p": 1, "na": 4.4, "o": 1}, {"n": "ZEON REFRIGERACAO LTDA", "v": 2373.9, "p": 1, "na": 4.0, "o": 1}, {"n": "FELAP FERRAMENTAS", "v": 1801.05, "p": 1, "na": 4.3, "o": 1}, {"n": "SÃO PEDRO SHOPPING DA CONSTRUÇÃO", "v": 927.0, "p": 1, "na": 4.1, "o": 1}, {"n": "ATACADÃO DA MEDEIRA", "v": 700.0, "p": 1, "na": 4.4, "o": 1}], "mar": [{"n": "MERCADO LIVRE", "v": 33576.87, "p": 13, "na": 4.42, "o": 4}, {"n": "AMPLO UNIFORMES", "v": 20475.8, "p": 10, "na": 4.0, "o": 5}, {"n": "MULTCABOS COMERCIO E MANUTENCAO DE REDES LTDA ", "v": 19520.0, "p": 1, "na": 4.3, "o": 1}, {"n": "MAGAZINE LUIZA", "v": 17358.42, "p": 1, "na": 4.4, "o": 1}, {"n": "PAUTA DIST.", "v": 16225.0, "p": 1, "na": 3.7, "o": 1}, {"n": "A.G SIQUEIRA", "v": 14948.0, "p": 4, "na": 4.3, "o": 2}, {"n": "NACIONAL FERROVIAS", "v": 11400.0, "p": 1, "na": 3.4, "o": 1}, {"n": "CENTER MADE", "v": 11100.0, "p": 2, "na": 4.3, "o": 1}, {"n": "IMA EPI", "v": 10140.5, "p": 2, "na": 4.9, "o": 2}, {"n": "RIPUBLIC LTDA", "v": 8620.0, "p": 1, "na": 4.3, "o": 1}, {"n": "FERRAMENTAS GERAIS", "v": 7744.85, "p": 2, "na": 4.3, "o": 2}, {"n": "GIMBA", "v": 7208.49, "p": 5, "na": 4.54, "o": 3}, {"n": "LEROY MERLIN", "v": 5394.27, "p": 2, "na": 4.0, "o": 2}, {"n": "SÓ MARCAS COMERCIAL LTDA", "v": 3314.3, "p": 1, "na": 4.3, "o": 1}, {"n": "FELAP FERRAMENTAS", "v": 2972.82, "p": 1, "na": 4.4, "o": 1}, {"n": "TUBARÃO EPI", "v": 2949.0, "p": 2, "na": 4.3, "o": 1}, {"n": "SARGON SOLUCOES ASFALTICAS LTDA (ITAQUAREIA)", "v": 2650.0, "p": 1, "na": 4.3, "o": 1}, {"n": "ULTRA MAQUINAS", "v": 1760.0, "p": 1, "na": 4.6, "o": 1}, {"n": "LOJA DO MECÂNICO", "v": 1652.8, "p": 1, "na": 4.0, "o": 1}, {"n": "ECOVERDE PRE MOLDADOS ", "v": 1440.0, "p": 1, "na": 3.7, "o": 1}, {"n": "GRUDAFORTE COMERCIO IMPORTACAO E EXPORTACAO", "v": 1290.0, "p": 1, "na": 3.6, "o": 1}, {"n": "BELA TINTAS LTDA", "v": 1200.0, "p": 1, "na": 4.3, "o": 1}, {"n": "PJ NEBLINA", "v": 1052.2, "p": 1, "na": 4.3, "o": 1}, {"n": "RISSO TRANSPORTES", "v": 1026.0, "p": 1, "na": 3.5, "o": 1}, {"n": "PROTETINTAS ", "v": 713.5, "p": 2, "na": 4.5, "o": 1}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 519.0, "p": 1, "na": 4.3, "o": 1}, {"n": "SOEDRAL SOCIEDADE ELETRICA HIDRAULICA LTDA", "v": 171.5, "p": 1, "na": 4.4, "o": 1}], "abr": [{"n": "MECALTEC INDUSTRIA E COMERCIO LTDA", "v": 57407.0, "p": 1, "na": 3.8, "o": 1}, {"n": "IMA EPI", "v": 45996.2, "p": 5, "na": 4.36, "o": 5}, {"n": "A.G SIQUEIRA", "v": 26900.7, "p": 4, "na": 4.4, "o": 3}, {"n": "MERCADO LIVRE", "v": 21422.42, "p": 9, "na": 4.36, "o": 5}, {"n": "VIA SAFE SINALIZAÇÃO", "v": 14295.0, "p": 1, "na": 4.3, "o": 1}, {"n": "FERRAMENTAS GERAIS", "v": 13534.96, "p": 1, "na": 4.3, "o": 1}, {"n": "GIMBA", "v": 12291.67, "p": 4, "na": 4.35, "o": 2}, {"n": "IBRAC INDUSTRIA BRASILEIRA DE CONDUTORES LTDA", "v": 9598.85, "p": 1, "na": 3.6, "o": 1}, {"n": "TRIANE SBO LTDA", "v": 9400.0, "p": 1, "na": 4.3, "o": 1}, {"n": "SARGON SOLUCOES ASFALTICAS LTDA (ITAQUAREIA)", "v": 8975.0, "p": 2, "na": 4.5, "o": 1}, {"n": "TUBARÃO EPI", "v": 5879.5, "p": 3, "na": 4.43, "o": 2}, {"n": "AMPLO UNIFORMES", "v": 4317.0, "p": 1, "na": 4.0, "o": 1}, {"n": "TESTBRASIL INSTRUMENTOS E EQUIPAMENTOS ", "v": 4170.0, "p": 1, "na": 4.0, "o": 1}, {"n": "ACRO CABOS DE ACO INDUSTRIA E COMERCIO LTDA", "v": 3609.82, "p": 1, "na": 4.3, "o": 1}, {"n": "BEM FICA MOVEIS DE ACO LTDA (MULTI AÇO FLEX)", "v": 3119.96, "p": 2, "na": 4.3, "o": 2}, {"n": "SÃO PEDRO SHOPPING DA CONSTRUÇÃO", "v": 2940.0, "p": 2, "na": 4.4, "o": 2}, {"n": "FELAP FERRAMENTAS", "v": 2360.0, "p": 1, "na": 4.3, "o": 1}, {"n": "FÁCIL PERSIANAS", "v": 2311.04, "p": 1, "na": 4.3, "o": 1}, {"n": "BONETE", "v": 2277.84, "p": 1, "na": 4.3, "o": 1}, {"n": "BLOCOMIX FABRICACAO DE ARTEFATOS DE CIMENTO LTDA", "v": 1795.5, "p": 1, "na": 4.4, "o": 1}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 1531.7, "p": 1, "na": 4.35, "o": 1}, {"n": "GRUDAFORTE COMERCIO IMPORTACAO E EXPORTACAO", "v": 1395.0, "p": 1, "na": 3.3, "o": 1}, {"n": "BELA TINTAS LTDA", "v": 1368.0, "p": 1, "na": 4.4, "o": 1}, {"n": "MONIQUE CORREA SOARES (REQUINTE LAZER)", "v": 839.0, "p": 1, "na": 4.1, "o": 1}, {"n": "ULTRA MAQUINAS", "v": 513.7, "p": 1, "na": 4.3, "o": 1}, {"n": "SAFARI DISTRIBUIDORA", "v": 501.0, "p": 1, "na": 4.1, "o": 1}, {"n": "A.N.T. FERRAMENTAS - COMERCIAL E IMPORTADORA LTDA", "v": 342.7, "p": 1, "na": 4.3, "o": 1}], "mai": [{"n": "MERCADO LIVRE", "v": 23909.26, "p": 11, "na": 4.41, "o": 3}, {"n": "A.G SIQUEIRA", "v": 21478.3, "p": 3, "na": 4.3, "o": 2}, {"n": "CROSSFOX COMERCIO DE CONDUTORES", "v": 10200.0, "p": 1, "na": 4.4, "o": 1}, {"n": "CENTER MADE", "v": 7860.0, "p": 1, "na": 4.3, "o": 1}, {"n": "FERRAMENTAS GERAIS", "v": 7751.38, "p": 1, "na": 4.3, "o": 1}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 6592.35, "p": 1, "na": 4.3, "o": 1}, {"n": "SARGON SOLUCOES ASFALTICAS LTDA (ITAQUAREIA)", "v": 6000.0, "p": 1, "na": 4.7, "o": 1}, {"n": "GIMBA", "v": 5206.97, "p": 4, "na": 4.42, "o": 3}, {"n": "BEM FICA MOVEIS DE ACO LTDA (MULTI AÇO FLEX)", "v": 4649.95, "p": 1, "na": 4.2, "o": 1}, {"n": "IMA EPI", "v": 2907.3, "p": 1, "na": 4.3, "o": 1}, {"n": "SORBDOM COMERCIO DE MATERIAIS ", "v": 2193.44, "p": 1, "na": 4.3, "o": 1}, {"n": "TUBARÃO EPI", "v": 1566.25, "p": 1, "na": 4.3, "o": 1}, {"n": "4CLIMB ESPORTES LTDA", "v": 503.6, "p": 1, "na": 3.7, "o": 1}, {"n": "BONETE", "v": 337.5, "p": 1, "na": 4.3, "o": 1}], "jun": [{"n": "ATLAS COPCO BRASIL LTDA", "v": 88864.79, "p": 1, "na": 4.3, "o": 1}, {"n": "HIDRAULICA POTENZA COMERCIO E INDUSTRIA LTDA", "v": 42244.84, "p": 2, "na": 4.7, "o": 1}, {"n": "MERC COMERCIO DE MATERIAIS PARA CONSTRUCAO LTDA", "v": 21908.98, "p": 1, "na": 4.6, "o": 1}, {"n": "A.G SIQUEIRA", "v": 19089.9, "p": 3, "na": 4.63, "o": 1}, {"n": "VALEFLUX INDÚSTRIA E COMÉRCIO DE VÁLVULAS LTDA", "v": 16400.0, "p": 1, "na": 3.7, "o": 1}, {"n": "BERMAD BRASIL INDUSTRIA DE VALVULAS LTDA", "v": 16136.7, "p": 1, "na": 4.3, "o": 1}, {"n": "MERCADO LIVRE", "v": 14111.05, "p": 5, "na": 4.3, "o": 2}, {"n": "CENTER MADE", "v": 9000.0, "p": 1, "na": 4.3, "o": 1}, {"n": "EKOPREM INDUSTRIA", "v": 7200.0, "p": 1, "na": 3.8, "o": 1}, {"n": "VTK TUBOS E CONEXOES EM ACO LTDA", "v": 4863.42, "p": 1, "na": 4.3, "o": 1}, {"n": "RUBBERPLASTIC COM. DE BORRACHAS E PLÁSTICOS LTDA", "v": 4420.0, "p": 1, "na": 4.3, "o": 1}, {"n": "IMA EPI", "v": 4323.0, "p": 1, "na": 4.3, "o": 1}, {"n": "GIMBA", "v": 4081.19, "p": 3, "na": 4.3, "o": 2}, {"n": "FRANJAÇO INDUSTRIA DE FLANGES", "v": 3708.65, "p": 1, "na": 4.3, "o": 1}, {"n": "MADEREIRA CAMPO VERDE", "v": 3000.0, "p": 1, "na": 4.3, "o": 1}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 2763.63, "p": 2, "na": 4.55, "o": 1}, {"n": "SÃO PEDRO SHOPPING DA CONSTRUÇÃO", "v": 2583.23, "p": 2, "na": 4.4, "o": 1}, {"n": "A.N.T. FERRAMENTAS - COMERCIAL E IMPORTADORA LTDA", "v": 2368.5, "p": 1, "na": 4.3, "o": 1}, {"n": "CASA MIMOSA", "v": 2345.14, "p": 1, "na": 4.3, "o": 1}, {"n": "SÓ MARCAS COMERCIAL LTDA", "v": 1768.6, "p": 1, "na": 4.6, "o": 1}, {"n": "LEFOO", "v": 1329.38, "p": 2, "na": 4.3, "o": 2}, {"n": "ASTRO EPI", "v": 1149.52, "p": 2, "na": 4.3, "o": 2}, {"n": "MILCORTE FERRAMENTAS LTDA", "v": 545.57, "p": 1, "na": 4.7, "o": 1}, {"n": "ICS SOLULÇÃO AMBIENTAL", "v": 480.0, "p": 1, "na": 4.6, "o": 1}], "tri": [{"n": "MILCORTE FERRAMENTAS LTDA", "v": 545.57, "p": 1, "na": 4.7, "o": 1}, {"n": "HIDRAULICA POTENZA COMERCIO E INDUSTRIA LTDA", "v": 42244.84, "p": 2, "na": 4.7, "o": 1}, {"n": "DISPAN", "v": 6570.0, "p": 2, "na": 4.6, "o": 1}, {"n": "REAL PERFIL INDÚSTRIA E COMÉRCIO LTDA", "v": 19570.2, "p": 4, "na": 4.6, "o": 2}, {"n": "UDIAÇO COM. E IND. DE FERRO E AÇO LTDA", "v": 2640.0, "p": 1, "na": 4.6, "o": 1}, {"n": "ICS SOLULÇÃO AMBIENTAL", "v": 480.0, "p": 1, "na": 4.6, "o": 1}, {"n": "MERC COMERCIO DE MATERIAIS PARA CONSTRUCAO LTDA", "v": 21908.98, "p": 1, "na": 4.6, "o": 1}, {"n": "IMA EPI", "v": 95348.02, "p": 13, "na": 4.55, "o": 6}, {"n": "SARGON SOLUCOES ASFALTICAS LTDA (ITAQUAREIA)", "v": 17625.0, "p": 4, "na": 4.5, "o": 1}, {"n": "SÓ MARCAS COMERCIAL LTDA", "v": 5082.9, "p": 2, "na": 4.45, "o": 1}, {"n": "A.G SIQUEIRA", "v": 89200.1, "p": 16, "na": 4.43, "o": 6}, {"n": "PROTETINTAS ", "v": 1193.0, "p": 3, "na": 4.43, "o": 1}, {"n": "GIMBA", "v": 32134.29, "p": 18, "na": 4.42, "o": 4}, {"n": "ATACADÃO DA MEDEIRA", "v": 700.0, "p": 1, "na": 4.4, "o": 1}, {"n": "SOEDRAL SOCIEDADE ELETRICA HIDRAULICA LTDA", "v": 171.5, "p": 1, "na": 4.4, "o": 1}, {"n": "BLOCOMIX FABRICACAO DE ARTEFATOS DE CIMENTO LTDA", "v": 1795.5, "p": 1, "na": 4.4, "o": 1}, {"n": "CROSSFOX COMERCIO DE CONDUTORES", "v": 10200.0, "p": 1, "na": 4.4, "o": 1}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 15161.78, "p": 7, "na": 4.38, "o": 4}, {"n": "MERCADO LIVRE", "v": 161865.01, "p": 65, "na": 4.37, "o": 8}, {"n": "TUBARÃO EPI", "v": 14010.75, "p": 8, "na": 4.35, "o": 4}, {"n": "PJ NEBLINA", "v": 1386.4, "p": 2, "na": 4.35, "o": 2}, {"n": "BELA TINTAS LTDA", "v": 2568.0, "p": 2, "na": 4.35, "o": 2}, {"n": "MADEREIRA CAMPO VERDE", "v": 10000.0, "p": 3, "na": 4.33, "o": 1}, {"n": "MAGAZINE LUIZA", "v": 21549.42, "p": 3, "na": 4.33, "o": 2}, {"n": "FELAP FERRAMENTAS", "v": 7133.87, "p": 3, "na": 4.33, "o": 3}, {"n": "CASA MIMOSA", "v": 4853.5, "p": 2, "na": 4.3, "o": 1}, {"n": "OBRAMAX", "v": 2820.05, "p": 2, "na": 4.3, "o": 2}, {"n": "FERRAMENTAS GERAIS", "v": 29031.19, "p": 4, "na": 4.3, "o": 4}, {"n": "MULTCABOS COMERCIO E MANUTENCAO DE REDES LTDA ", "v": 19520.0, "p": 1, "na": 4.3, "o": 1}, {"n": "RIPUBLIC LTDA", "v": 8620.0, "p": 1, "na": 4.3, "o": 1}, {"n": "CENTER MADE", "v": 27960.0, "p": 4, "na": 4.3, "o": 2}, {"n": "A.N.T. FERRAMENTAS - COMERCIAL E IMPORTADORA LTDA", "v": 2711.2, "p": 2, "na": 4.3, "o": 2}, {"n": "VIA SAFE SINALIZAÇÃO", "v": 14295.0, "p": 1, "na": 4.3, "o": 1}, {"n": "BONETE", "v": 2615.34, "p": 2, "na": 4.3, "o": 1}, {"n": "FÁCIL PERSIANAS", "v": 2311.04, "p": 1, "na": 4.3, "o": 1}, {"n": "ACRO CABOS DE ACO INDUSTRIA E COMERCIO LTDA", "v": 3609.82, "p": 1, "na": 4.3, "o": 1}, {"n": "TRIANE SBO LTDA", "v": 9400.0, "p": 1, "na": 4.3, "o": 1}, {"n": "SORBDOM COMERCIO DE MATERIAIS ", "v": 2193.44, "p": 1, "na": 4.3, "o": 1}, {"n": "ATLAS COPCO BRASIL LTDA", "v": 88864.79, "p": 1, "na": 4.3, "o": 1}, {"n": "LEFOO", "v": 1329.38, "p": 2, "na": 4.3, "o": 2}, {"n": "BERMAD BRASIL INDUSTRIA DE VALVULAS LTDA", "v": 16136.7, "p": 1, "na": 4.3, "o": 1}, {"n": "VTK TUBOS E CONEXOES EM ACO LTDA", "v": 4863.42, "p": 1, "na": 4.3, "o": 1}, {"n": "RUBBERPLASTIC COM. DE BORRACHAS E PLÁSTICOS LTDA", "v": 4420.0, "p": 1, "na": 4.3, "o": 1}, {"n": "FRANJAÇO INDUSTRIA DE FLANGES", "v": 3708.65, "p": 1, "na": 4.3, "o": 1}, {"n": "ASTRO EPI", "v": 1149.52, "p": 2, "na": 4.3, "o": 2}, {"n": "BEM FICA MOVEIS DE ACO LTDA (MULTI AÇO FLEX)", "v": 7769.91, "p": 3, "na": 4.27, "o": 2}, {"n": "SÃO PEDRO SHOPPING DA CONSTRUÇÃO", "v": 7347.23, "p": 6, "na": 4.25, "o": 2}, {"n": "SAFARI DISTRIBUIDORA", "v": 2919.6, "p": 3, "na": 4.23, "o": 3}, {"n": "ULTRA MAQUINAS", "v": 7113.7, "p": 3, "na": 4.2, "o": 2}, {"n": "LEROY MERLIN", "v": 6568.73, "p": 3, "na": 4.1, "o": 3}, {"n": "INN GRIFFE", "v": 4589.0, "p": 1, "na": 4.1, "o": 1}, {"n": "MONIQUE CORREA SOARES (REQUINTE LAZER)", "v": 839.0, "p": 1, "na": 4.1, "o": 1}, {"n": "AMPLO UNIFORMES", "v": 30798.9, "p": 12, "na": 4.0, "o": 7}, {"n": "MAXXI POSTES", "v": 3676.5, "p": 1, "na": 4.0, "o": 1}, {"n": "ZEON REFRIGERACAO LTDA", "v": 2373.9, "p": 1, "na": 4.0, "o": 1}, {"n": "LOJA DO MECÂNICO", "v": 1652.8, "p": 1, "na": 4.0, "o": 1}, {"n": "TESTBRASIL INSTRUMENTOS E EQUIPAMENTOS ", "v": 4170.0, "p": 1, "na": 4.0, "o": 1}, {"n": "SR SERRALHERIA LTDA", "v": 7395.0, "p": 1, "na": 3.8, "o": 1}, {"n": "EVANILDO DOS SANTOS PEREIRA (FRETE POSTES)", "v": 478.0, "p": 1, "na": 3.8, "o": 1}, {"n": "MECALTEC INDUSTRIA E COMERCIO LTDA", "v": 57407.0, "p": 1, "na": 3.8, "o": 1}, {"n": "EKOPREM INDUSTRIA", "v": 7200.0, "p": 1, "na": 3.8, "o": 1}, {"n": "PAUTA DIST.", "v": 16225.0, "p": 1, "na": 3.7, "o": 1}, {"n": "ECOVERDE PRE MOLDADOS ", "v": 1440.0, "p": 1, "na": 3.7, "o": 1}, {"n": "4CLIMB ESPORTES LTDA", "v": 503.6, "p": 1, "na": 3.7, "o": 1}, {"n": "VALEFLUX INDÚSTRIA E COMÉRCIO DE VÁLVULAS LTDA", "v": 16400.0, "p": 1, "na": 3.7, "o": 1}, {"n": "GRUDAFORTE COMERCIO IMPORTACAO E EXPORTACAO", "v": 3880.0, "p": 3, "na": 3.6, "o": 2}, {"n": "IBRAC INDUSTRIA BRASILEIRA DE CONDUTORES LTDA", "v": 9598.85, "p": 1, "na": 3.6, "o": 1}, {"n": "RISSO TRANSPORTES", "v": 2403.25, "p": 2, "na": 3.5, "o": 2}, {"n": "B.G.B COMERCIO DE AREIA", "v": 25200.0, "p": 1, "na": 3.4, "o": 1}, {"n": "BLOCOS DUCEMILTON RODRIGUES", "v": 1608.84, "p": 1, "na": 3.4, "o": 1}, {"n": "NACIONAL FERROVIAS", "v": 26600.0, "p": 2, "na": 3.4, "o": 2}]};
+const FORN_Q1 = [{"n": "MERCADO LIVRE", "v": 161865.01, "p": 65, "na": 4.37, "o": 8}, {"n": "IMA EPI", "v": 95348.02, "p": 13, "na": 4.55, "o": 6}, {"n": "A.G SIQUEIRA", "v": 89200.1, "p": 16, "na": 4.43, "o": 6}, {"n": "ATLAS COPCO BRASIL LTDA", "v": 88864.79, "p": 1, "na": 4.3, "o": 1}, {"n": "MECALTEC INDUSTRIA E COMERCIO LTDA", "v": 57407.0, "p": 1, "na": 3.8, "o": 1}, {"n": "HIDRAULICA POTENZA COMERCIO E INDUSTRIA LTDA", "v": 42244.84, "p": 2, "na": 4.7, "o": 1}, {"n": "GIMBA", "v": 32134.29, "p": 18, "na": 4.42, "o": 4}, {"n": "AMPLO UNIFORMES", "v": 30798.9, "p": 12, "na": 4.0, "o": 7}, {"n": "FERRAMENTAS GERAIS", "v": 29031.19, "p": 4, "na": 4.3, "o": 4}, {"n": "CENTER MADE", "v": 27960.0, "p": 4, "na": 4.3, "o": 2}, {"n": "NACIONAL FERROVIAS", "v": 26600.0, "p": 2, "na": 3.4, "o": 2}, {"n": "B.G.B COMERCIO DE AREIA", "v": 25200.0, "p": 1, "na": 3.4, "o": 1}, {"n": "MERC COMERCIO DE MATERIAIS PARA CONSTRUCAO LTDA", "v": 21908.98, "p": 1, "na": 4.6, "o": 1}, {"n": "MAGAZINE LUIZA", "v": 21549.42, "p": 3, "na": 4.33, "o": 2}, {"n": "REAL PERFIL INDÚSTRIA E COMÉRCIO LTDA", "v": 19570.2, "p": 4, "na": 4.6, "o": 2}];
+const OD = {"0000/2025": {"jan": {"mat": [{"n": "UNIFORMES ADMINISTRATIVOS", "v": 6006.1, "e": 414.2}, {"n": "CARREGADOR DE CELULAR", "v": 518.62, "e": 0.0}], "sup": [{"n": "AMPLO UNIFORMES", "v": 6006.1}, {"n": "MERCADO LIVRE", "v": 518.62}], "cats": [{"cat": "UNIFORMES ADMINISTRATIVOS", "v": 6006.1, "r": 6420.3, "e": 414.2, "items": [{"n": "UNIFORMES ADMINISTRATIVOS", "v": 6006.1, "r": 6420.3, "e": 414.2}]}, {"cat": "CARREGADOR DE CELULAR", "v": 518.62, "r": 518.62, "e": 0.0, "items": [{"n": "CARREGADOR DE CELULAR", "v": 518.62, "r": 518.62, "e": 0.0}]}]}, "fev": {"mat": [{"n": "NOTEBOOK I5 E CELULAR", "v": 6634.4, "e": 0.0}, {"n": "Tela + locker", "v": 5585.8, "e": 391.74}, {"n": "INSUMOS PARA ESCRITORIO", "v": 5039.22, "e": 156.93}, {"n": "CELULARES", "v": 2735.6, "e": 0.0}, {"n": "PACOTE OFFICE", "v": 1699.04, "e": 0.0}, {"n": "PENTE DE MEMÓRIA ", "v": 409.0, "e": 0.0}, {"n": "TENIS E INSUMOS PARA ESCRITORIO", "v": 208.24, "e": 31.57}], "sup": [{"n": "MERCADO LIVRE", "v": 16072.33}, {"n": "GIMBA", "v": 3345.97}, {"n": "MAGAZINE LUIZA", "v": 2893.0}], "cats": [{"cat": "NOTEBOOK I5 E CELULAR", "v": 6634.4, "r": 6634.4, "e": 0.0, "items": [{"n": "NOTEBOOK I5 E CELULAR", "v": 6634.4, "r": 6634.4, "e": 0.0}]}, {"cat": "Tela + locker", "v": 5585.8, "r": 5977.54, "e": 391.74, "items": [{"n": "Tela + locker", "v": 5585.8, "r": 5977.54, "e": 391.74}]}, {"cat": "INSUMOS PARA ESCRITORIO", "v": 5039.22, "r": 5196.15, "e": 156.93, "items": [{"n": "INSUMOS PARA ESCRITORIO", "v": 1416.6, "r": 1573.53, "e": 156.93}, {"n": "INSUMOS PARA ESCRITORIO", "v": 2247.21, "r": 2247.21, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "v": 1375.41, "r": 1375.41, "e": 0.0}]}, {"cat": "CELULARES", "v": 2735.6, "r": 2735.6, "e": 0.0, "items": [{"n": "CELULARES", "v": 2735.6, "r": 2735.6, "e": 0.0}]}, {"cat": "PACOTE OFFICE", "v": 1699.04, "r": 1699.04, "e": 0.0, "items": [{"n": "PACOTE OFFICE", "v": 1699.04, "r": 1699.04, "e": 0.0}]}, {"cat": "PENTE DE MEMÓRIA ", "v": 409.0, "r": 409.0, "e": 0.0, "items": [{"n": "PENTE DE MEMÓRIA ", "v": 409.0, "r": 409.0, "e": 0.0}]}, {"cat": "TENIS E INSUMOS PARA ESCRITORIO", "v": 208.24, "r": 239.81, "e": 31.57, "items": [{"n": "TENIS E INSUMOS PARA ESCRITORIO", "v": 208.24, "r": 239.81, "e": 31.57}]}]}, "mar": {"mat": [{"n": "NOTEBOOK I3", "v": 35957.82, "e": 4638.9}, {"n": "NOTEBOOK I5", "v": 16225.0, "e": -174.75}, {"n": "CELULARES E CAPINHAS", "v": 5471.2, "e": 512.88}, {"n": "INSUMOS PARA ESCRITORIO", "v": 4172.85, "e": 26.75}, {"n": "KIT BOAS VINDAS", "v": 3314.3, "e": 0.0}], "sup": [{"n": "MERCADO LIVRE", "v": 24754.92}, {"n": "MAGAZINE LUIZA", "v": 17358.42}, {"n": "PAUTA DIST.", "v": 16225.0}, {"n": "GIMBA", "v": 3490.54}, {"n": "SÓ MARCAS COMERCIAL LTDA", "v": 3314.3}], "cats": [{"cat": "NOTEBOOK I3", "v": 35957.82, "r": 40596.72, "e": 4638.9, "items": [{"n": "NOTEBOOK I3", "v": 35957.82, "r": 40596.72, "e": 4638.9}]}, {"cat": "NOTEBOOK I5", "v": 16225.0, "r": 16050.25, "e": -174.75, "items": [{"n": "NOTEBOOK I5", "v": 16225.0, "r": 16050.25, "e": -174.75}]}, {"cat": "CELULARES E CAPINHAS", "v": 5471.2, "r": 5984.08, "e": 512.88, "items": [{"n": "CELULARES E CAPINHAS", "v": 5471.2, "r": 5984.08, "e": 512.88}]}, {"cat": "INSUMOS PARA ESCRITORIO", "v": 4172.85, "r": 4199.6, "e": 26.75, "items": [{"n": "INSUMOS PARA ESCRITORIO", "v": 616.99, "r": 635.69, "e": 18.7}, {"n": "INSUMOS PARA ESCRITORIO", "v": 330.25, "r": 338.3, "e": 8.05}, {"n": "INSUMOS PARA ESCRITORIO", "v": 79.0, "r": 79.0, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "v": 2213.64, "r": 2213.64, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "v": 715.05, "r": 715.05, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "v": 217.92, "r": 217.92, "e": 0.0}]}, {"cat": "KIT BOAS VINDAS", "v": 3314.3, "r": 3314.3, "e": 0.0, "items": [{"n": "KIT BOAS VINDAS", "v": 3314.3, "r": 3314.3, "e": 0.0}]}]}, "abr": {"mat": [{"n": "MOVEIS PARA ESCRITORIO", "v": 4057.04, "e": -2911.21}, {"n": "INSUMOS PARA ESCRITORIO", "v": 756.86, "e": 0.0}], "sup": [{"n": "GIMBA", "v": 5525.52}, {"n": "BEM FICA MOVEIS DE ACO LTDA (MULTI AÇO FLEX)", "v": 1619.98}, {"n": "MERCADO LIVRE", "v": 68.97}], "cats": [{"cat": "MOVEIS PARA ESCRITORIO", "v": 4057.04, "r": 1145.83, "e": -2911.21, "items": [{"n": "MOVEIS PARA ESCRITORIO", "v": 4057.04, "r": 1145.83, "e": -2911.21}]}, {"cat": "INSUMOS PARA ESCRITORIO", "v": 756.86, "r": 756.86, "e": 0.0, "items": [{"n": "INSUMOS PARA ESCRITORIO", "v": 756.86, "r": 756.86, "e": 0.0}]}]}, "mai": {"mat": [{"n": "INSUMOS PARA ESCRITORIO", "v": 3844.16, "e": 300.23}, {"n": "MONITOR+CADEIRA", "v": 3097.02, "e": -272.15}, {"n": "MONITOR", "v": 2824.52, "e": 0.35}, {"n": "WALKTALK", "v": 174.57, "e": 0.0}], "sup": [{"n": "MERCADO LIVRE", "v": 7055.78}, {"n": "GIMBA", "v": 2884.49}], "cats": [{"cat": "INSUMOS PARA ESCRITORIO", "v": 3844.16, "r": 4144.39, "e": 300.23, "items": [{"n": "INSUMOS PARA ESCRITORIO", "v": 648.64, "r": 948.87, "e": 300.23}, {"n": "INSUMOS PARA ESCRITORIO", "v": 309.59, "r": 309.59, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "v": 2612.34, "r": 2612.34, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "v": 273.59, "r": 273.59, "e": 0.0}]}, {"cat": "MONITOR+CADEIRA", "v": 3097.02, "r": 2824.87, "e": -272.15, "items": [{"n": "MONITOR+CADEIRA", "v": 3097.02, "r": 2824.87, "e": -272.15}]}, {"cat": "MONITOR", "v": 2824.52, "r": 2824.87, "e": 0.35, "items": [{"n": "MONITOR", "v": 2824.52, "r": 2824.87, "e": 0.35}]}, {"cat": "WALKTALK", "v": 174.57, "r": 174.57, "e": 0.0, "items": [{"n": "WALKTALK", "v": 174.57, "r": 174.57, "e": 0.0}]}]}, "jun": {"mat": [{"n": "NOTEBOOKS", "v": 6441.36, "e": 4906.32}, {"n": "INSUMOS PARA ESCRITORIO", "v": 3349.15, "e": 0.0}, {"n": "COMPRA DE CALÇAS", "v": 2443.84, "e": 0.0}, {"n": "KIT BOAS VINDAS", "v": 1768.6, "e": 0.0}, {"n": "DESCARTE DE MATERIAL (UNIFORMES E EPIS)", "v": 480.0, "e": 0.0}], "sup": [{"n": "MERCADO LIVRE", "v": 9396.97}, {"n": "GIMBA", "v": 2837.38}, {"n": "SÓ MARCAS COMERCIAL LTDA", "v": 1768.6}, {"n": "ICS SOLULÇÃO AMBIENTAL", "v": 480.0}], "cats": [{"cat": "NOTEBOOKS", "v": 6441.36, "r": 11347.68, "e": 4906.32, "items": [{"n": "NOTEBOOKS", "v": 6441.36, "r": 11347.68, "e": 4906.32}]}, {"cat": "INSUMOS PARA ESCRITORIO", "v": 3349.15, "r": 3349.15, "e": 0.0, "items": [{"n": "INSUMOS PARA ESCRITORIO", "v": 85.4, "r": 85.4, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "v": 3263.75, "r": 3263.75, "e": 0.0}]}, {"cat": "COMPRA DE CALÇAS", "v": 2443.84, "r": 2443.84, "e": 0.0, "items": [{"n": "COMPRA DE CALÇAS", "v": 2443.84, "r": 2443.84, "e": 0.0}]}, {"cat": "KIT BOAS VINDAS", "v": 1768.6, "r": 1768.6, "e": 0.0, "items": [{"n": "KIT BOAS VINDAS", "v": 1768.6, "r": 1768.6, "e": 0.0}]}, {"cat": "DESCARTE DE MATERIAL (UNIFORMES E EPIS)", "v": 480.0, "r": 480.0, "e": 0.0, "items": [{"n": "DESCARTE DE MATERIAL (UNIFORMES E EPIS)", "v": 480.0, "r": 480.0, "e": 0.0}]}]}}, "0419/2025": {"jan": {"mat": [{"n": "PORTÃO AUTOMATICO", "v": 7395.0, "e": 1305.0}, {"n": "EPC", "v": 5550.0, "e": 450.0}, {"n": "TENDA GAZEBO", "v": 2463.88, "e": 60.9}, {"n": "ARMARIO ARQUIVO", "v": 923.9, "e": -363.9}], "sup": [{"n": "SR SERRALHERIA LTDA", "v": 7395.0}, {"n": "MADEREIRA CAMPO VERDE", "v": 4600.0}, {"n": "MERCADO LIVRE", "v": 3387.78}, {"n": "TUBARÃO EPI", "v": 950.0}], "cats": [{"cat": "PORTÃO AUTOMATICO", "v": 7395.0, "r": 8700.0, "e": 1305.0, "items": [{"n": "PORTÃO AUTOMATICO", "v": 7395.0, "r": 8700.0, "e": 1305.0}]}, {"cat": "EPC", "v": 5550.0, "r": 6000.0, "e": 450.0, "items": [{"n": "EPC", "v": 950.0, "r": 1200.0, "e": 250.0}, {"n": "EPC", "v": 4600.0, "r": 4800.0, "e": 200.0}]}, {"cat": "TENDA GAZEBO", "v": 2463.88, "r": 2524.78, "e": 60.9, "items": [{"n": "TENDA GAZEBO", "v": 2463.88, "r": 2524.78, "e": 60.9}]}, {"cat": "ARMARIO ARQUIVO", "v": 923.9, "r": 560.0, "e": -363.9, "items": [{"n": "ARMARIO ARQUIVO", "v": 923.9, "r": 560.0, "e": -363.9}]}]}, "fev": {"mat": [{"n": "UNIFORMES OPERACIONAIS", "v": 4589.0, "e": -48.38}, {"n": "EPI", "v": 2937.66, "e": 1798.1}, {"n": "PONTALETE", "v": 2400.0, "e": -200.0}, {"n": "CINTA DE ELEVAÇÃO", "v": 2101.68, "e": 188.32}], "sup": [{"n": "INN GRIFFE", "v": 4589.0}, {"n": "IMA EPI", "v": 2937.66}, {"n": "MADEREIRA CAMPO VERDE", "v": 2400.0}, {"n": "MERCADO LIVRE", "v": 2101.68}], "cats": [{"cat": "UNIFORMES OPERACIONAIS", "v": 4589.0, "r": 4540.62, "e": -48.38, "items": [{"n": "UNIFORMES OPERACIONAIS", "v": 4589.0, "r": 4540.62, "e": -48.38}]}, {"cat": "EPI", "v": 2937.66, "r": 4735.76, "e": 1798.1, "items": [{"n": "EPI", "v": 2937.66, "r": 4735.76, "e": 1798.1}]}, {"cat": "PONTALETE", "v": 2400.0, "r": 2200.0, "e": -200.0, "items": [{"n": "PONTALETE", "v": 2400.0, "r": 2200.0, "e": -200.0}]}, {"cat": "CINTA DE ELEVAÇÃO", "v": 2101.68, "r": 2290.0, "e": 188.32, "items": [{"n": "CINTA DE ELEVAÇÃO", "v": 2101.68, "r": 2290.0, "e": 188.32}]}]}, "mar": {"mat": [{"n": "EPC", "v": 21620.0, "e": 5843.1}, {"n": "REPARADOR DE ASFALTO", "v": 2650.0, "e": 1150.0}, {"n": "MAT. DE LIMPEZA P/ ESCRITÓRIO", "v": 2467.7, "e": -40.24}, {"n": "ILUMINAÇÃO NOTURNA", "v": 1052.2, "e": 307.2}, {"n": "EPI", "v": 1049.0, "e": 51.0}], "sup": [{"n": "CENTER MADE", "v": 11100.0}, {"n": "RIPUBLIC LTDA", "v": 8620.0}, {"n": "TUBARÃO EPI", "v": 2949.0}, {"n": "SARGON SOLUCOES ASFALTICAS LTDA (ITAQUAREIA)", "v": 2650.0}, {"n": "GIMBA", "v": 2467.7}, {"n": "PJ NEBLINA", "v": 1052.2}], "cats": [{"cat": "EPC", "v": 21620.0, "r": 27463.1, "e": 5843.1, "items": [{"n": "EPC", "v": 8620.0, "r": 8900.0, "e": 280.0}, {"n": "EPC", "v": 1900.0, "r": 1900.0, "e": 0.0}, {"n": "EPC", "v": 3600.0, "r": 5750.0, "e": 2150.0}, {"n": "EPC", "v": 7500.0, "r": 10913.1, "e": 3413.1}]}, {"cat": "REPARADOR DE ASFALTO", "v": 2650.0, "r": 3800.0, "e": 1150.0, "items": [{"n": "REPARADOR DE ASFALTO", "v": 2650.0, "r": 3800.0, "e": 1150.0}]}, {"cat": "MAT. DE LIMPEZA P/ ESCRITÓRIO", "v": 2467.7, "r": 2427.46, "e": -40.24, "items": [{"n": "MAT. DE LIMPEZA P/ ESCRITÓRIO", "v": 2467.7, "r": 2427.46, "e": -40.24}]}, {"cat": "ILUMINAÇÃO NOTURNA", "v": 1052.2, "r": 1359.4, "e": 307.2, "items": [{"n": "ILUMINAÇÃO NOTURNA", "v": 1052.2, "r": 1359.4, "e": 307.2}]}, {"cat": "EPI", "v": 1049.0, "r": 1100.0, "e": 51.0, "items": [{"n": "EPI", "v": 1049.0, "r": 1100.0, "e": 51.0}]}]}, "abr": {"mat": [{"n": "ASFALTO FRIO", "v": 8975.0, "e": 1625.0}, {"n": "MATERIAL DE IÇAMENTO DE CARGA", "v": 3609.82, "e": 23.83}, {"n": "compra de alavanca + escada", "v": 2861.0, "e": -131.42}, {"n": "EPI", "v": 2470.0, "e": -72.0}, {"n": "CIMENTO CPII", "v": 1095.0, "e": -45.0}, {"n": "ferramentas", "v": 1074.7, "e": 656.52}, {"n": "COMPRA DE PISOS ESPECIAL", "v": 839.0, "e": -20.0}], "sup": [{"n": "MECALTEC INDUSTRIA E COMERCIO LTDA", "v": 57407.0}, {"n": "SARGON SOLUCOES ASFALTICAS LTDA (ITAQUAREIA)", "v": 8975.0}, {"n": "ACRO CABOS DE ACO INDUSTRIA E COMERCIO LTDA", "v": 3609.82}, {"n": "IMA EPI", "v": 2470.0}, {"n": "FELAP FERRAMENTAS", "v": 2360.0}, {"n": "SÃO PEDRO SHOPPING DA CONSTRUÇÃO", "v": 1095.0}, {"n": "MONIQUE CORREA SOARES (REQUINTE LAZER)", "v": 839.0}, {"n": "A.G SIQUEIRA", "v": 732.0}, {"n": "SAFARI DISTRIBUIDORA", "v": 501.0}, {"n": "A.N.T. FERRAMENTAS - COMERCIAL E IMPORTADORA LTDA", "v": 342.7}], "cats": [{"cat": "ASFALTO FRIO", "v": 8975.0, "r": 10600.0, "e": 1625.0, "items": [{"n": "ASFALTO FRIO", "v": 3975.0, "r": 3975.0, "e": 0.0}, {"n": "ASFALTO FRIO", "v": 5000.0, "r": 6625.0, "e": 1625.0}]}, {"cat": "MATERIAL DE IÇAMENTO DE CARGA", "v": 3609.82, "r": 3633.65, "e": 23.83, "items": [{"n": "MATERIAL DE IÇAMENTO DE CARGA", "v": 3609.82, "r": 3633.65, "e": 23.83}]}, {"cat": "compra de alavanca + escada", "v": 2861.0, "r": 2729.58, "e": -131.42, "items": [{"n": "compra de alavanca + escada", "v": 2861.0, "r": 2729.58, "e": -131.42}]}, {"cat": "EPI", "v": 2470.0, "r": 2398.0, "e": -72.0, "items": [{"n": "EPI", "v": 2470.0, "r": 2398.0, "e": -72.0}]}, {"cat": "CIMENTO CPII", "v": 1095.0, "r": 1050.0, "e": -45.0, "items": [{"n": "CIMENTO CPII", "v": 1095.0, "r": 1050.0, "e": -45.0}]}, {"cat": "ferramentas", "v": 1074.7, "r": 1731.22, "e": 656.52, "items": [{"n": "ferramentas", "v": 1074.7, "r": 1731.22, "e": 656.52}]}, {"cat": "COMPRA DE PISOS ESPECIAL", "v": 839.0, "r": 819.0, "e": -20.0, "items": [{"n": "COMPRA DE PISOS ESPECIAL", "v": 839.0, "r": 819.0, "e": -20.0}]}]}, "mai": {"mat": [{"n": "ASFALTO FRIO", "v": 6000.0, "e": 1950.0}, {"n": "INSUMOS PARA ESCRITORIO", "v": 1273.43, "e": 120.92}], "sup": [{"n": "SARGON SOLUCOES ASFALTICAS LTDA (ITAQUAREIA)", "v": 6000.0}, {"n": "GIMBA", "v": 1273.43}], "cats": [{"cat": "ASFALTO FRIO", "v": 6000.0, "r": 7950.0, "e": 1950.0, "items": [{"n": "ASFALTO FRIO", "v": 6000.0, "r": 7950.0, "e": 1950.0}]}, {"cat": "INSUMOS PARA ESCRITORIO", "v": 1273.43, "r": 1394.35, "e": 120.92, "items": [{"n": "INSUMOS PARA ESCRITORIO", "v": 1273.43, "r": 1394.35, "e": 120.92}]}]}, "jun": {"mat": [{"n": "PRANCHAS E ESTRONCAS PARA ESCORAMENTO", "v": 12000.0, "e": -1760.0}, {"n": "BARREIRA DE CONCRETO (NEW JERSEY)", "v": 7200.0, "e": 0.0}, {"n": "FRANJAÇO", "v": 3708.65, "e": 0.0}, {"n": "COMPRA DE AÇO PARA O MURO DE DIVISA", "v": 1905.23, "e": 2.2}, {"n": "CIMENTO CPIII", "v": 678.0, "e": 61.0}], "sup": [{"n": "CENTER MADE", "v": 9000.0}, {"n": "EKOPREM INDUSTRIA", "v": 7200.0}, {"n": "FRANJAÇO INDUSTRIA DE FLANGES", "v": 3708.65}, {"n": "MADEREIRA CAMPO VERDE", "v": 3000.0}, {"n": "SÃO PEDRO SHOPPING DA CONSTRUÇÃO", "v": 2583.23}], "cats": [{"cat": "PRANCHAS E ESTRONCAS PARA ESCORAMENTO", "v": 12000.0, "r": 10240.0, "e": -1760.0, "items": [{"n": "PRANCHAS E ESTRONCAS PARA ESCORAMENTO", "v": 12000.0, "r": 10240.0, "e": -1760.0}]}, {"cat": "BARREIRA DE CONCRETO (NEW JERSEY)", "v": 7200.0, "r": 7200.0, "e": 0.0, "items": [{"n": "BARREIRA DE CONCRETO (NEW JERSEY)", "v": 7200.0, "r": 7200.0, "e": 0.0}]}, {"cat": "FRANJAÇO", "v": 3708.65, "r": 3708.65, "e": 0.0, "items": [{"n": "FRANJAÇO", "v": 3708.65, "r": 3708.65, "e": 0.0}]}, {"cat": "COMPRA DE AÇO PARA O MURO DE DIVISA", "v": 1905.23, "r": 1907.43, "e": 2.2, "items": [{"n": "COMPRA DE AÇO PARA O MURO DE DIVISA", "v": 1905.23, "r": 1907.43, "e": 2.2}]}, {"cat": "CIMENTO CPIII", "v": 678.0, "r": 739.0, "e": 61.0, "items": [{"n": "CIMENTO CPIII", "v": 678.0, "r": 739.0, "e": 61.0}]}]}}, "0433/2025": {"jan": {"mat": [{"n": "AREIA", "v": 25200.0, "e": 9648.0}, {"n": "TELHA", "v": 1932.89, "e": -16.89}, {"n": "BLOCOS", "v": 1608.84, "e": 1348.01}, {"n": "CIMENTO CPIII", "v": 897.0, "e": 0.0}], "sup": [{"n": "B.G.B COMERCIO DE AREIA", "v": 25200.0}, {"n": "OBRAMAX", "v": 1932.89}, {"n": "BLOCOS DUCEMILTON RODRIGUES", "v": 1608.84}, {"n": "SÃO PEDRO SHOPPING DA CONSTRUÇÃO", "v": 897.0}], "cats": [{"cat": "AREIA", "v": 25200.0, "r": 34848.0, "e": 9648.0, "items": [{"n": "AREIA", "v": 25200.0, "r": 34848.0, "e": 9648.0}]}, {"cat": "TELHA", "v": 1932.89, "r": 1916.0, "e": -16.89, "items": [{"n": "TELHA", "v": 1932.89, "r": 1916.0, "e": -16.89}]}, {"cat": "BLOCOS", "v": 1608.84, "r": 2956.85, "e": 1348.01, "items": [{"n": "BLOCOS", "v": 1608.84, "r": 2956.85, "e": 1348.01}]}, {"cat": "CIMENTO CPIII", "v": 897.0, "r": 897.0, "e": 0.0, "items": [{"n": "CIMENTO CPIII", "v": 897.0, "r": 897.0, "e": 0.0}]}]}, "fev": {"mat": [{"n": "EPI", "v": 8028.58, "e": -1120.84}, {"n": "TELAS Q385", "v": 2640.0, "e": 867.4}, {"n": "CIMENTO CPIII", "v": 927.0, "e": -30.0}, {"n": "Tabua pinus bruto - 2x20x300 cm", "v": 700.0, "e": 410.68}, {"n": "ESTRADO DE PLÁST.", "v": 105.96, "e": 6.0}], "sup": [{"n": "IMA EPI", "v": 8028.58}, {"n": "UDIAÇO COM. E IND. DE FERRO E AÇO LTDA", "v": 2640.0}, {"n": "SÃO PEDRO SHOPPING DA CONSTRUÇÃO", "v": 927.0}, {"n": "ATACADÃO DA MEDEIRA", "v": 700.0}, {"n": "MERCADO LIVRE", "v": 105.96}], "cats": [{"cat": "EPI", "v": 8028.58, "r": 6907.74, "e": -1120.84, "items": [{"n": "EPI", "v": 8028.58, "r": 6907.74, "e": -1120.84}]}, {"cat": "TELAS Q385", "v": 2640.0, "r": 3507.4, "e": 867.4, "items": [{"n": "TELAS Q385", "v": 2640.0, "r": 3507.4, "e": 867.4}]}, {"cat": "CIMENTO CPIII", "v": 927.0, "r": 897.0, "e": -30.0, "items": [{"n": "CIMENTO CPIII", "v": 927.0, "r": 897.0, "e": -30.0}]}, {"cat": "Tabua pinus bruto - 2x20x300 cm", "v": 700.0, "r": 1110.68, "e": 410.68, "items": [{"n": "Tabua pinus bruto - 2x20x300 cm", "v": 700.0, "r": 1110.68, "e": 410.68}]}, {"cat": "ESTRADO DE PLÁST.", "v": 105.96, "r": 111.96, "e": 6.0, "items": [{"n": "ESTRADO DE PLÁST.", "v": 105.96, "r": 111.96, "e": 6.0}]}]}, "mar": {"mat": [{"n": "caixa de passagem", "v": 1440.0, "e": -884.48}, {"n": "UNIFORMES OPERACIONAIS", "v": 1437.5, "e": 137.5}, {"n": "UNIFORMES ADMINISTRATIVOS", "v": 1148.4, "e": 0.0}, {"n": "ELETRODUTO CORRUGADO", "v": 171.5, "e": 83.22}], "sup": [{"n": "AMPLO UNIFORMES", "v": 2585.9}, {"n": "ECOVERDE PRE MOLDADOS ", "v": 1440.0}, {"n": "SOEDRAL SOCIEDADE ELETRICA HIDRAULICA LTDA", "v": 171.5}], "cats": [{"cat": "caixa de passagem", "v": 1440.0, "r": 555.52, "e": -884.48, "items": [{"n": "caixa de passagem", "v": 1440.0, "r": 555.52, "e": -884.48}]}, {"cat": "UNIFORMES OPERACIONAIS", "v": 1437.5, "r": 1575.0, "e": 137.5, "items": [{"n": "UNIFORMES OPERACIONAIS", "v": 1437.5, "r": 1575.0, "e": 137.5}]}, {"cat": "UNIFORMES ADMINISTRATIVOS", "v": 1148.4, "r": 1148.4, "e": 0.0, "items": [{"n": "UNIFORMES ADMINISTRATIVOS", "v": 1148.4, "r": 1148.4, "e": 0.0}]}, {"cat": "ELETRODUTO CORRUGADO", "v": 171.5, "r": 254.72, "e": 83.22, "items": [{"n": "ELETRODUTO CORRUGADO", "v": 171.5, "r": 254.72, "e": 83.22}]}]}, "abr": {"mat": [{"n": "CIMENTO CPIII", "v": 1845.0, "e": -350.0}, {"n": "BLOCOS DE CONCRETO", "v": 1795.5, "e": 122.5}], "sup": [{"n": "SÃO PEDRO SHOPPING DA CONSTRUÇÃO", "v": 1845.0}, {"n": "BLOCOMIX FABRICACAO DE ARTEFATOS DE CIMENTO LTDA", "v": 1795.5}], "cats": [{"cat": "CIMENTO CPIII", "v": 1845.0, "r": 1495.0, "e": -350.0, "items": [{"n": "CIMENTO CPIII", "v": 1845.0, "r": 1495.0, "e": -350.0}]}, {"cat": "BLOCOS DE CONCRETO", "v": 1795.5, "r": 1918.0, "e": 122.5, "items": [{"n": "BLOCOS DE CONCRETO", "v": 1795.5, "r": 1918.0, "e": 122.5}]}]}}, "0326/2024": {"jan": {"mat": [{"n": "carrinho trolley", "v": 15200.0, "e": 479.63}, {"n": "EPI", "v": 5727.16, "e": 1664.34}, {"n": "MATERIAL OBRA", "v": 2137.26, "e": 687.21}, {"n": "TABLET", "v": 1867.2, "e": -166.05}, {"n": "frete carrinho trolley (risso)", "v": 1377.25, "e": -897.62}, {"n": "Soquete Torques", "v": 586.3, "e": 111.7}], "sup": [{"n": "NACIONAL FERROVIAS", "v": 15200.0}, {"n": "ULTRA MAQUINAS", "v": 4840.0}, {"n": "MERCADO LIVRE", "v": 4004.46}, {"n": "RISSO TRANSPORTES", "v": 1377.25}, {"n": "OBRAMAX", "v": 887.16}, {"n": "SAFARI DISTRIBUIDORA", "v": 586.3}], "cats": [{"cat": "carrinho trolley", "v": 15200.0, "r": 15679.63, "e": 479.63, "items": [{"n": "carrinho trolley", "v": 15200.0, "r": 15679.63, "e": 479.63}]}, {"cat": "EPI", "v": 5727.16, "r": 7391.5, "e": 1664.34, "items": [{"n": "EPI", "v": 5727.16, "r": 7391.5, "e": 1664.34}]}, {"cat": "MATERIAL OBRA", "v": 2137.26, "r": 2824.47, "e": 687.21, "items": [{"n": "MATERIAL OBRA", "v": 2137.26, "r": 2824.47, "e": 687.21}]}, {"cat": "TABLET", "v": 1867.2, "r": 1701.15, "e": -166.05, "items": [{"n": "TABLET", "v": 1867.2, "r": 1701.15, "e": -166.05}]}, {"cat": "frete carrinho trolley (risso)", "v": 1377.25, "r": 479.63, "e": -897.62, "items": [{"n": "frete carrinho trolley (risso)", "v": 1377.25, "r": 479.63, "e": -897.62}]}, {"cat": "Soquete Torques", "v": 586.3, "r": 698.0, "e": 111.7, "items": [{"n": "Soquete Torques", "v": 586.3, "r": 698.0, "e": 111.7}]}]}, "fev": {"mat": [{"n": "EPI", "v": 20905.32, "e": 1095.87}, {"n": "Escadas", "v": 2867.6, "e": -311.64}, {"n": "EPC", "v": 464.18, "e": 186.22}], "sup": [{"n": "IMA EPI", "v": 21014.78}, {"n": "MERCADO LIVRE", "v": 3222.32}], "cats": [{"cat": "EPI", "v": 20905.32, "r": 22001.19, "e": 1095.87, "items": [{"n": "EPI", "v": 20905.32, "r": 22001.19, "e": 1095.87}]}, {"cat": "Escadas", "v": 2867.6, "r": 2555.96, "e": -311.64, "items": [{"n": "Escadas", "v": 2867.6, "r": 2555.96, "e": -311.64}]}, {"cat": "EPC", "v": 464.18, "r": 650.4, "e": 186.22, "items": [{"n": "EPC", "v": 464.18, "r": 650.4, "e": 186.22}]}]}, "mar": {"mat": [{"n": "FERRAMENTAS", "v": 13243.37, "e": 757.43}, {"n": "UNIFORMES OPERACIONAIS", "v": 3465.0, "e": 315.0}, {"n": "UNIFORMES ADMINISTRATIVOS", "v": 3448.0, "e": 0.0}, {"n": "escadas", "v": 2972.82, "e": -138.68}, {"n": "MATERIAL PARA HIGIENE", "v": 1250.25, "e": 0.0}, {"n": "INSUMOS PARA ESCRITORIO", "v": 600.06, "e": 0.0}], "sup": [{"n": "A.G SIQUEIRA", "v": 7703.0}, {"n": "AMPLO UNIFORMES", "v": 6913.0}, {"n": "MERCADO LIVRE", "v": 4590.66}, {"n": "FELAP FERRAMENTAS", "v": 2972.82}, {"n": "LEROY MERLIN", "v": 1549.77}, {"n": "GIMBA", "v": 1250.25}], "cats": [{"cat": "FERRAMENTAS", "v": 13243.37, "r": 14000.8, "e": 757.43, "items": [{"n": "FERRAMENTAS", "v": 1055.0, "r": 1569.5, "e": 514.5}, {"n": "FERRAMENTAS", "v": 12188.37, "r": 12431.3, "e": 242.93}]}, {"cat": "UNIFORMES OPERACIONAIS", "v": 3465.0, "r": 3780.0, "e": 315.0, "items": [{"n": "UNIFORMES OPERACIONAIS", "v": 3465.0, "r": 3780.0, "e": 315.0}]}, {"cat": "UNIFORMES ADMINISTRATIVOS", "v": 3448.0, "r": 3448.0, "e": 0.0, "items": [{"n": "UNIFORMES ADMINISTRATIVOS", "v": 3448.0, "r": 3448.0, "e": 0.0}]}, {"cat": "escadas", "v": 2972.82, "r": 2834.14, "e": -138.68, "items": [{"n": "escadas", "v": 2972.82, "r": 2834.14, "e": -138.68}]}, {"cat": "MATERIAL PARA HIGIENE", "v": 1250.25, "r": 1250.25, "e": 0.0, "items": [{"n": "MATERIAL PARA HIGIENE", "v": 1250.25, "r": 1250.25, "e": 0.0}]}, {"cat": "INSUMOS PARA ESCRITORIO", "v": 600.06, "r": 600.06, "e": 0.0, "items": [{"n": "INSUMOS PARA ESCRITORIO", "v": 600.06, "r": 600.06, "e": 0.0}]}]}, "abr": {"mat": [{"n": "ferramentas", "v": 40287.36, "e": 8165.59}, {"n": "EPI", "v": 21183.45, "e": 2364.71}, {"n": "MATERIAIS PARA SALA DE REUNIÃO", "v": 6321.38, "e": 1408.21}, {"n": "ESCADAS", "v": 5250.0, "e": -1650.5}, {"n": "materiais para serigrafia e galvite", "v": 1368.0, "e": 906.6}], "sup": [{"n": "A.G SIQUEIRA", "v": 24132.7}, {"n": "IMA EPI", "v": 17656.25}, {"n": "FERRAMENTAS GERAIS", "v": 13534.96}, {"n": "MERCADO LIVRE", "v": 9638.04}, {"n": "TUBARÃO EPI", "v": 2506.0}, {"n": "FÁCIL PERSIANAS", "v": 2311.04}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 1531.7}, {"n": "BELA TINTAS LTDA", "v": 1368.0}], "cats": [{"cat": "ferramentas", "v": 40287.36, "r": 48452.95, "e": 8165.59, "items": [{"n": "ferramentas", "v": 40287.36, "r": 48452.95, "e": 8165.59}]}, {"cat": "EPI", "v": 21183.45, "r": 23548.16, "e": 2364.71, "items": [{"n": "EPI", "v": 20369.85, "r": 22313.16, "e": 1943.31}, {"n": "EPI", "v": 813.6, "r": 1235.0, "e": 421.4}]}, {"cat": "MATERIAIS PARA SALA DE REUNIÃO", "v": 6321.38, "r": 7729.59, "e": 1408.21, "items": [{"n": "MATERIAIS PARA SALA DE REUNIÃO", "v": 6321.38, "r": 7729.59, "e": 1408.21}]}, {"cat": "ESCADAS", "v": 5250.0, "r": 3599.5, "e": -1650.5, "items": [{"n": "ESCADAS", "v": 5250.0, "r": 3599.5, "e": -1650.5}]}, {"cat": "materiais para serigrafia e galvite", "v": 1368.0, "r": 2274.6, "e": 906.6, "items": [{"n": "materiais para serigrafia e galvite", "v": 1368.0, "r": 2274.6, "e": 906.6}]}]}, "mai": {"mat": [{"n": "ferramentas", "v": 18348.22, "e": 2445.95}, {"n": "SPLIBOLT", "v": 10200.0, "e": 0.0}, {"n": "material de limpeza", "v": 1121.95, "e": -57.04}, {"n": "EPI", "v": 813.6, "e": 421.4}], "sup": [{"n": "CROSSFOX COMERCIO DE CONDUTORES", "v": 10200.0}, {"n": "A.G SIQUEIRA", "v": 9393.3}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 6592.35}, {"n": "MERCADO LIVRE", "v": 2745.47}, {"n": "GIMBA", "v": 1049.05}, {"n": "4CLIMB ESPORTES LTDA", "v": 503.6}], "cats": [{"cat": "ferramentas", "v": 18348.22, "r": 20794.17, "e": 2445.95, "items": [{"n": "ferramentas", "v": 18348.22, "r": 20794.17, "e": 2445.95}]}, {"cat": "SPLIBOLT", "v": 10200.0, "r": 10200.0, "e": 0.0, "items": [{"n": "SPLIBOLT", "v": 10200.0, "r": 10200.0, "e": 0.0}]}, {"cat": "material de limpeza", "v": 1121.95, "r": 1064.91, "e": -57.04, "items": [{"n": "material de limpeza", "v": 1121.95, "r": 1064.91, "e": -57.04}]}, {"cat": "EPI", "v": 813.6, "r": 1235.0, "e": 421.4, "items": [{"n": "EPI", "v": 813.6, "r": 1235.0, "e": 421.4}]}]}, "jun": {"mat": [{"n": "INSUMOS PARA ESCRITORIO", "v": 1243.81, "e": 335.59}], "sup": [{"n": "GIMBA", "v": 1243.81}], "cats": [{"cat": "INSUMOS PARA ESCRITORIO", "v": 1243.81, "r": 1579.4, "e": 335.59, "items": [{"n": "INSUMOS PARA ESCRITORIO", "v": 1243.81, "r": 1579.4, "e": 335.59}]}]}}, "0228/2023": {"jan": {"mat": [{"n": "CABO UTP", "v": 23107.02, "e": -711.02}, {"n": "FERRAMENTAS", "v": 1368.4, "e": 542.36}, {"n": "CABO PP", "v": 789.45, "e": 133.1}], "sup": [{"n": "MERCADO LIVRE", "v": 23562.27}, {"n": "A.G SIQUEIRA", "v": 1368.4}, {"n": "PJ NEBLINA", "v": 334.2}], "cats": [{"cat": "CABO UTP", "v": 23107.02, "r": 22396.0, "e": -711.02, "items": [{"n": "CABO UTP", "v": 23107.02, "r": 22396.0, "e": -711.02}]}, {"cat": "FERRAMENTAS", "v": 1368.4, "r": 1910.76, "e": 542.36, "items": [{"n": "FERRAMENTAS", "v": 1368.4, "r": 1910.76, "e": 542.36}]}, {"cat": "CABO PP", "v": 789.45, "r": 922.55, "e": 133.1, "items": [{"n": "CABO PP", "v": 789.45, "r": 922.55, "e": 133.1}]}]}, "fev": {"mat": [{"n": "CABO UTP", "v": 7403.0, "e": -277.0}, {"n": "sealtubo + abraçadeira", "v": 3006.0, "e": 297.6}, {"n": "abaraçadeira de nylon + fita isolante", "v": 2746.1, "e": -277.71}, {"n": "CONECTOR", "v": 199.5, "e": 0.3}], "sup": [{"n": "MERCADO LIVRE", "v": 7974.7}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 3006.0}, {"n": "ZEON REFRIGERACAO LTDA", "v": 2373.9}], "cats": [{"cat": "CABO UTP", "v": 7403.0, "r": 7126.0, "e": -277.0, "items": [{"n": "CABO UTP", "v": 7403.0, "r": 7126.0, "e": -277.0}]}, {"cat": "sealtubo + abraçadeira", "v": 3006.0, "r": 3303.6, "e": 297.6, "items": [{"n": "sealtubo + abraçadeira", "v": 3006.0, "r": 3303.6, "e": 297.6}]}, {"cat": "abaraçadeira de nylon + fita isolante", "v": 2746.1, "r": 2468.39, "e": -277.71, "items": [{"n": "abaraçadeira de nylon + fita isolante", "v": 2746.1, "r": 2468.39, "e": -277.71}]}, {"cat": "CONECTOR", "v": 199.5, "r": 199.8, "e": 0.3, "items": [{"n": "CONECTOR", "v": 199.5, "r": 199.8, "e": 0.3}]}]}, "mar": {"mat": [{"n": "CABO UTP", "v": 19520.0, "e": 2060.0}, {"n": "UNIFORMES OPERACIONAIS", "v": 1732.5, "e": 157.5}, {"n": "UNIFORMES ADMINISTRATIVOS", "v": 1053.4, "e": 0.0}], "sup": [{"n": "MULTCABOS COMERCIO E MANUTENCAO DE REDES LTDA ", "v": 19520.0}, {"n": "AMPLO UNIFORMES", "v": 2785.9}], "cats": [{"cat": "CABO UTP", "v": 19520.0, "r": 21580.0, "e": 2060.0, "items": [{"n": "CABO UTP", "v": 19520.0, "r": 21580.0, "e": 2060.0}]}, {"cat": "UNIFORMES OPERACIONAIS", "v": 1732.5, "r": 1890.0, "e": 157.5, "items": [{"n": "UNIFORMES OPERACIONAIS", "v": 1732.5, "r": 1890.0, "e": 157.5}]}, {"cat": "UNIFORMES ADMINISTRATIVOS", "v": 1053.4, "r": 1053.4, "e": 0.0, "items": [{"n": "UNIFORMES ADMINISTRATIVOS", "v": 1053.4, "r": 1053.4, "e": 0.0}]}]}}, "0455/2025": {"jan": {"mat": [{"n": "FERRAMENTAS", "v": 15036.76, "e": 4262.49}, {"n": "SUPORTES", "v": 8070.0, "e": 0.0}, {"n": "EPC", "v": 2666.0, "e": 215.52}, {"n": "Neoprene", "v": 1195.0, "e": 1300.0}], "sup": [{"n": "MERCADO LIVRE", "v": 6561.06}, {"n": "REAL PERFIL INDÚSTRIA E COMÉRCIO LTDA", "v": 6460.0}, {"n": "A.G SIQUEIRA", "v": 5414.8}, {"n": "TUBARÃO EPI", "v": 2666.0}, {"n": "SAFARI DISTRIBUIDORA", "v": 1832.3}, {"n": "DISPAN", "v": 1610.0}, {"n": "GRUDAFORTE COMERCIO IMPORTACAO E EXPORTACAO", "v": 1195.0}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 749.1}, {"n": "PROTETINTAS ", "v": 479.5}], "cats": [{"cat": "FERRAMENTAS", "v": 15036.76, "r": 19299.25, "e": 4262.49, "items": [{"n": "FERRAMENTAS", "v": 15036.76, "r": 19299.25, "e": 4262.49}]}, {"cat": "SUPORTES", "v": 8070.0, "r": 8070.0, "e": 0.0, "items": [{"n": "SUPORTES", "v": 8070.0, "r": 8070.0, "e": 0.0}]}, {"cat": "EPC", "v": 2666.0, "r": 2881.52, "e": 215.52, "items": [{"n": "EPC", "v": 2666.0, "r": 2881.52, "e": 215.52}]}, {"cat": "Neoprene", "v": 1195.0, "r": 2495.0, "e": 1300.0, "items": [{"n": "Neoprene", "v": 1195.0, "r": 2495.0, "e": 1300.0}]}]}, "fev": {"mat": [{"n": "SUPORTES", "v": 8710.0, "e": 1220.0}, {"n": "Suportes", "v": 7032.0, "e": 0.0}, {"n": "Escadas", "v": 3099.05, "e": 349.0}, {"n": "tablet", "v": 587.0, "e": 612.0}], "sup": [{"n": "REAL PERFIL INDÚSTRIA E COMÉRCIO LTDA", "v": 10782.0}, {"n": "DISPAN", "v": 4960.0}, {"n": "FELAP FERRAMENTAS", "v": 1801.05}, {"n": "MAGAZINE LUIZA", "v": 1298.0}, {"n": "MERCADO LIVRE", "v": 587.0}], "cats": [{"cat": "SUPORTES", "v": 8710.0, "r": 9930.0, "e": 1220.0, "items": [{"n": "SUPORTES", "v": 8710.0, "r": 9930.0, "e": 1220.0}]}, {"cat": "Suportes", "v": 7032.0, "r": 7032.0, "e": 0.0, "items": [{"n": "Suportes", "v": 7032.0, "r": 7032.0, "e": 0.0}]}, {"cat": "Escadas", "v": 3099.05, "r": 3448.05, "e": 349.0, "items": [{"n": "Escadas", "v": 3099.05, "r": 3448.05, "e": 349.0}]}, {"cat": "tablet", "v": 587.0, "r": 1199.0, "e": 612.0, "items": [{"n": "tablet", "v": 587.0, "r": 1199.0, "e": 612.0}]}]}, "mar": {"mat": [{"n": "FERRAMENTAS", "v": 12868.37, "e": 8329.28}, {"n": "carrinho trolley", "v": 11400.0, "e": 0.0}, {"n": "EPI", "v": 6890.2, "e": -396.6}, {"n": "MATERIAIS para pintura", "v": 2749.0, "e": 3745.4}, {"n": "Fio veda rosca 55", "v": 2625.0, "e": 374.4}, {"n": "Monitor+Impressora+Tintas", "v": 1860.62, "e": 157.03}, {"n": "frete carrinho trolley (risso)", "v": 1026.0, "e": 351.25}, {"n": "compra de tablet diferença de valor ", "v": 43.45, "e": -43.45}], "sup": [{"n": "NACIONAL FERROVIAS", "v": 11400.0}, {"n": "A.G SIQUEIRA", "v": 7245.0}, {"n": "IMA EPI", "v": 5130.2}, {"n": "MERCADO LIVRE", "v": 4187.84}, {"n": "LEROY MERLIN", "v": 3844.5}, {"n": "ULTRA MAQUINAS", "v": 1760.0}, {"n": "GRUDAFORTE COMERCIO IMPORTACAO E EXPORTACAO", "v": 1290.0}, {"n": "BELA TINTAS LTDA", "v": 1200.0}, {"n": "FERRAMENTAS GERAIS", "v": 1146.6}, {"n": "RISSO TRANSPORTES", "v": 1026.0}, {"n": "PROTETINTAS ", "v": 713.5}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 519.0}], "cats": [{"cat": "FERRAMENTAS", "v": 12868.37, "r": 21197.65, "e": 8329.28, "items": [{"n": "FERRAMENTAS", "v": 12130.05, "r": 20491.85, "e": 8361.8}, {"n": "FERRAMENTAS", "v": 738.32, "r": 705.8, "e": -32.52}]}, {"cat": "carrinho trolley", "v": 11400.0, "r": 11400.0, "e": 0.0, "items": [{"n": "carrinho trolley", "v": 11400.0, "r": 11400.0, "e": 0.0}]}, {"cat": "EPI", "v": 6890.2, "r": 6493.6, "e": -396.6, "items": [{"n": "EPI", "v": 6890.2, "r": 6493.6, "e": -396.6}]}, {"cat": "MATERIAIS para pintura", "v": 2749.0, "r": 6494.4, "e": 3745.4, "items": [{"n": "MATERIAIS para pintura", "v": 2749.0, "r": 6494.4, "e": 3745.4}]}, {"cat": "Fio veda rosca 55", "v": 2625.0, "r": 2999.4, "e": 374.4, "items": [{"n": "Fio veda rosca 55", "v": 2625.0, "r": 2999.4, "e": 374.4}]}, {"cat": "Monitor+Impressora+Tintas", "v": 1860.62, "r": 2017.65, "e": 157.03, "items": [{"n": "Monitor+Impressora+Tintas", "v": 1860.62, "r": 2017.65, "e": 157.03}]}, {"cat": "frete carrinho trolley (risso)", "v": 1026.0, "r": 1377.25, "e": 351.25, "items": [{"n": "frete carrinho trolley (risso)", "v": 1026.0, "r": 1377.25, "e": 351.25}]}, {"cat": "compra de tablet diferença de valor ", "v": 43.45, "r": 0.0, "e": -43.45, "items": [{"n": "compra de tablet diferença de valor ", "v": 43.45, "r": 0.0, "e": -43.45}]}]}, "abr": {"mat": [{"n": "EPI", "v": 6391.15, "e": 176.64}, {"n": "ARALDITE", "v": 2500.0, "e": 52.85}], "sup": [{"n": "IMA EPI", "v": 5877.45}, {"n": "MERCADO LIVRE", "v": 2500.0}, {"n": "ULTRA MAQUINAS", "v": 513.7}], "cats": [{"cat": "EPI", "v": 6391.15, "r": 6567.79, "e": 176.64, "items": [{"n": "EPI", "v": 6391.15, "r": 6567.79, "e": 176.64}]}, {"cat": "ARALDITE", "v": 2500.0, "r": 2552.85, "e": 52.85, "items": [{"n": "ARALDITE", "v": 2500.0, "r": 2552.85, "e": 52.85}]}]}, "mai": {"mat": [{"n": "EPI", "v": 4473.55, "e": 1441.51}], "sup": [{"n": "IMA EPI", "v": 2907.3}, {"n": "TUBARÃO EPI", "v": 1566.25}], "cats": [{"cat": "EPI", "v": 4473.55, "r": 5915.06, "e": 1441.51, "items": [{"n": "EPI", "v": 4473.55, "r": 5915.06, "e": 1441.51}]}]}, "jun": {"mat": [{"n": "EPI", "v": 560.02, "e": 0.0}], "sup": [{"n": "ASTRO EPI", "v": 560.02}], "cats": [{"cat": "EPI", "v": 560.02, "r": 560.02, "e": 0.0, "items": [{"n": "EPI", "v": 560.02, "r": 560.02, "e": 0.0}]}]}}, "0351/2024": {"jan": {"mat": [{"n": "conexoes de cobre", "v": 2508.36, "e": 469.42}, {"n": "Suportes", "v": 2328.2, "e": 500.9}, {"n": "EQUIP. P/ TESTES DE ESTANQUEIDADE", "v": 1334.69, "e": -17.69}], "sup": [{"n": "CASA MIMOSA", "v": 2508.36}, {"n": "REAL PERFIL INDÚSTRIA E COMÉRCIO LTDA", "v": 2328.2}, {"n": "LEROY MERLIN", "v": 1174.46}, {"n": "MERCADO LIVRE", "v": 160.23}], "cats": [{"cat": "conexoes de cobre", "v": 2508.36, "r": 2977.78, "e": 469.42, "items": [{"n": "conexoes de cobre", "v": 2508.36, "r": 2977.78, "e": 469.42}]}, {"cat": "Suportes", "v": 2328.2, "r": 2829.1, "e": 500.9, "items": [{"n": "Suportes", "v": 2328.2, "r": 2829.1, "e": 500.9}]}, {"cat": "EQUIP. P/ TESTES DE ESTANQUEIDADE", "v": 1334.69, "r": 1317.0, "e": -17.69, "items": [{"n": "EQUIP. P/ TESTES DE ESTANQUEIDADE", "v": 1334.69, "r": 1317.0, "e": -17.69}]}]}, "fev": {"mat": [{"n": "tablet", "v": 587.0, "e": 612.0}], "sup": [{"n": "MERCADO LIVRE", "v": 587.0}], "cats": [{"cat": "tablet", "v": 587.0, "r": 1199.0, "e": 612.0, "items": [{"n": "tablet", "v": 587.0, "r": 1199.0, "e": 612.0}]}]}, "mar": {"mat": [{"n": "FERRAMENTAS", "v": 8251.05, "e": 3446.69}, {"n": "EPI", "v": 5010.3, "e": -448.2}, {"n": "UNIFORMES ADMINISTRATIVOS", "v": 1732.4, "e": 0.0}, {"n": "UNIFORMES OPERACIONAIS", "v": 1725.0, "e": 165.0}, {"n": "compra de tablet diferença de valor ", "v": 43.45, "e": -43.45}], "sup": [{"n": "FERRAMENTAS GERAIS", "v": 6598.25}, {"n": "IMA EPI", "v": 5010.3}, {"n": "AMPLO UNIFORMES", "v": 3457.4}, {"n": "LOJA DO MECÂNICO", "v": 1652.8}, {"n": "MERCADO LIVRE", "v": 43.45}], "cats": [{"cat": "FERRAMENTAS", "v": 8251.05, "r": 11697.74, "e": 3446.69, "items": [{"n": "FERRAMENTAS", "v": 8251.05, "r": 11697.74, "e": 3446.69}]}, {"cat": "EPI", "v": 5010.3, "r": 4562.1, "e": -448.2, "items": [{"n": "EPI", "v": 5010.3, "r": 4562.1, "e": -448.2}]}, {"cat": "UNIFORMES ADMINISTRATIVOS", "v": 1732.4, "r": 1732.4, "e": 0.0, "items": [{"n": "UNIFORMES ADMINISTRATIVOS", "v": 1732.4, "r": 1732.4, "e": 0.0}]}, {"cat": "UNIFORMES OPERACIONAIS", "v": 1725.0, "r": 1890.0, "e": 165.0, "items": [{"n": "UNIFORMES OPERACIONAIS", "v": 1725.0, "r": 1890.0, "e": 165.0}]}, {"cat": "compra de tablet diferença de valor ", "v": 43.45, "r": 0.0, "e": -43.45, "items": [{"n": "compra de tablet diferença de valor ", "v": 43.45, "r": 0.0, "e": -43.45}]}]}, "abr": {"mat": [{"n": "EPI", "v": 4337.0, "e": 93.65}, {"n": "INSUMOS", "v": 1517.62, "e": 790.24}, {"n": "Neoprene", "v": 1395.0, "e": 1100.0}], "sup": [{"n": "IMA EPI", "v": 4337.0}, {"n": "MERCADO LIVRE", "v": 1517.62}, {"n": "GRUDAFORTE COMERCIO IMPORTACAO E EXPORTACAO", "v": 1395.0}], "cats": [{"cat": "EPI", "v": 4337.0, "r": 4430.65, "e": 93.65, "items": [{"n": "EPI", "v": 4337.0, "r": 4430.65, "e": 93.65}]}, {"cat": "INSUMOS", "v": 1517.62, "r": 2307.86, "e": 790.24, "items": [{"n": "INSUMOS", "v": 1517.62, "r": 2307.86, "e": 790.24}]}, {"cat": "Neoprene", "v": 1395.0, "r": 2495.0, "e": 1100.0, "items": [{"n": "Neoprene", "v": 1395.0, "r": 2495.0, "e": 1100.0}]}]}, "jun": {"mat": [{"n": "DISCIPLINA DE INCÊNDIO", "v": 74420.14, "e": 110014.54}, {"n": "MATERIAIS COMPLEMENTARES LM-D", "v": 29128.98, "e": 29959.68}, {"n": "FERRAMENTAS", "v": 24767.85, "e": 10095.17}, {"n": "FLANGES DE COBRE", "v": 8938.22, "e": 1090.47}, {"n": "MEDIDORES DE PRESSURIZAÇÃO", "v": 664.69, "e": 1452.92}, {"n": "FERRAMENTA", "v": 545.57, "e": 191.23}], "sup": [{"n": "HIDRAULICA POTENZA COMERCIO E INDUSTRIA LTDA", "v": 42244.84}, {"n": "MERC COMERCIO DE MATERIAIS PARA CONSTRUCAO LTDA", "v": 21908.98}, {"n": "A.G SIQUEIRA", "v": 19089.9}, {"n": "VALEFLUX INDÚSTRIA E COMÉRCIO DE VÁLVULAS LTDA", "v": 16400.0}, {"n": "BERMAD BRASIL INDUSTRIA DE VALVULAS LTDA", "v": 16136.7}, {"n": "VTK TUBOS E CONEXOES EM ACO LTDA", "v": 4863.42}, {"n": "MERCADO LIVRE", "v": 4714.08}, {"n": "RUBBERPLASTIC COM. DE BORRACHAS E PLÁSTICOS LTDA", "v": 4420.0}, {"n": "SANTIL COMERCIAL ELETRICA LTDA", "v": 2763.63}, {"n": "A.N.T. FERRAMENTAS - COMERCIAL E IMPORTADORA LTDA", "v": 2368.5}, {"n": "CASA MIMOSA", "v": 2345.14}, {"n": "LEFOO", "v": 664.69}, {"n": "MILCORTE FERRAMENTAS LTDA", "v": 545.57}], "cats": [{"cat": "DISCIPLINA DE INCÊNDIO", "v": 74420.14, "r": 184434.68, "e": 110014.54, "items": [{"n": "DISCIPLINA DE INCÊNDIO", "v": 74420.14, "r": 184434.68, "e": 110014.54}]}, {"cat": "MATERIAIS COMPLEMENTARES LM-D", "v": 29128.98, "r": 59088.66, "e": 29959.68, "items": [{"n": "MATERIAIS COMPLEMENTARES LM-D", "v": 29128.98, "r": 59088.66, "e": 29959.68}]}, {"cat": "FERRAMENTAS", "v": 24767.85, "r": 34863.02, "e": 10095.17, "items": [{"n": "FERRAMENTAS", "v": 2933.9, "r": 3172.87, "e": 238.97}, {"n": "FERRAMENTAS", "v": 21833.95, "r": 31690.15, "e": 9856.2}]}, {"cat": "FLANGES DE COBRE", "v": 8938.22, "r": 10028.69, "e": 1090.47, "items": [{"n": "FLANGES DE COBRE", "v": 8938.22, "r": 10028.69, "e": 1090.47}]}, {"cat": "MEDIDORES DE PRESSURIZAÇÃO", "v": 664.69, "r": 2117.61, "e": 1452.92, "items": [{"n": "MEDIDORES DE PRESSURIZAÇÃO", "v": 664.69, "r": 2117.61, "e": 1452.92}]}, {"cat": "FERRAMENTA", "v": 545.57, "r": 736.8, "e": 191.23, "items": [{"n": "FERRAMENTA", "v": 545.57, "r": 736.8, "e": 191.23}]}]}}, "0450/2025": {"jan": {"mat": [{"n": "POSTES + FRETE", "v": 4154.5, "e": 435.5}], "sup": [{"n": "MAXXI POSTES", "v": 3676.5}, {"n": "EVANILDO DOS SANTOS PEREIRA (FRETE POSTES)", "v": 478.0}], "cats": [{"cat": "POSTES + FRETE", "v": 4154.5, "r": 4590.0, "e": 435.5, "items": [{"n": "POSTES + FRETE", "v": 4154.5, "r": 4590.0, "e": 435.5}]}]}}, "0341/2024": {"mar": {"mat": [{"n": "UNIFORMES OPERACIONAIS", "v": 2610.0, "e": 225.0}, {"n": "UNIFORMES ADMINISTRATIVOS", "v": 2123.6, "e": 0.0}], "sup": [{"n": "AMPLO UNIFORMES", "v": 4733.6}], "cats": [{"cat": "UNIFORMES OPERACIONAIS", "v": 2610.0, "r": 2835.0, "e": 225.0, "items": [{"n": "UNIFORMES OPERACIONAIS", "v": 2610.0, "r": 2835.0, "e": 225.0}]}, {"cat": "UNIFORMES ADMINISTRATIVOS", "v": 2123.6, "r": 2123.6, "e": 0.0, "items": [{"n": "UNIFORMES ADMINISTRATIVOS", "v": 2123.6, "r": 2123.6, "e": 0.0}]}]}, "abr": {"mat": [{"n": "TROCA DE CABOS", "v": 9598.85, "e": 0.0}], "sup": [{"n": "IBRAC INDUSTRIA BRASILEIRA DE CONDUTORES LTDA", "v": 9598.85}], "cats": [{"cat": "TROCA DE CABOS", "v": 9598.85, "r": 9598.85, "e": 0.0, "items": [{"n": "TROCA DE CABOS", "v": 9598.85, "r": 9598.85, "e": 0.0}]}]}, "jun": {"mat": [{"n": "PEÇAS BARRILETE", "v": 88864.79, "e": 0.0}], "sup": [{"n": "ATLAS COPCO BRASIL LTDA", "v": 88864.79}], "cats": [{"cat": "PEÇAS BARRILETE", "v": 88864.79, "r": 88864.79, "e": 0.0, "items": [{"n": "PEÇAS BARRILETE", "v": 88864.79, "r": 88864.79, "e": 0.0}]}]}}, "0478/2025": {"abr": {"mat": [{"n": "EPI", "v": 23004.5, "e": 5838.7}, {"n": "EPC/AREA EXTERNA", "v": 17117.34, "e": -397.63}, {"n": "UNIFORMES OPERACIONAIS", "v": 9400.0, "e": -200.0}, {"n": "MOVEIS PARA ESCRITORIO", "v": 9017.97, "e": 389.01}, {"n": "BAFOMETRO", "v": 4349.8, "e": 151.2}], "sup": [{"n": "IMA EPI", "v": 15655.5}, {"n": "VIA SAFE SINALIZAÇÃO", "v": 14295.0}, {"n": "TRIANE SBO LTDA", "v": 9400.0}, {"n": "MERCADO LIVRE", "v": 7697.79}, {"n": "GIMBA", "v": 6766.15}, {"n": "AMPLO UNIFORMES", "v": 4317.0}, {"n": "TESTBRASIL INSTRUMENTOS E EQUIPAMENTOS ", "v": 4170.0}, {"n": "TUBARÃO EPI", "v": 3373.5}, {"n": "BONETE", "v": 2277.84}, {"n": "A.G SIQUEIRA", "v": 2036.0}, {"n": "BEM FICA MOVEIS DE ACO LTDA (MULTI AÇO FLEX)", "v": 1499.98}], "cats": [{"cat": "EPI", "v": 23004.5, "r": 28843.2, "e": 5838.7, "items": [{"n": "EPI", "v": 23004.5, "r": 28843.2, "e": 5838.7}]}, {"cat": "EPC/AREA EXTERNA", "v": 17117.34, "r": 16719.71, "e": -397.63, "items": [{"n": "EPC/AREA EXTERNA", "v": 17117.34, "r": 16719.71, "e": -397.63}]}, {"cat": "UNIFORMES OPERACIONAIS", "v": 9400.0, "r": 9200.0, "e": -200.0, "items": [{"n": "UNIFORMES OPERACIONAIS", "v": 9400.0, "r": 9200.0, "e": -200.0}]}, {"cat": "MOVEIS PARA ESCRITORIO", "v": 9017.97, "r": 9406.98, "e": 389.01, "items": [{"n": "MOVEIS PARA ESCRITORIO", "v": 9017.97, "r": 9406.98, "e": 389.01}]}, {"cat": "BAFOMETRO", "v": 4349.8, "r": 4501.0, "e": 151.2, "items": [{"n": "BAFOMETRO", "v": 4349.8, "r": 4501.0, "e": 151.2}]}]}, "mai": {"mat": [{"n": "ferramentas", "v": 25259.24, "e": 3951.18}, {"n": "tapume", "v": 7860.0, "e": -3360.0}, {"n": "Bebedouro de Água", "v": 4849.8, "e": 150.0}, {"n": "armario alojamento", "v": 4649.95, "e": 50.05}, {"n": "INSUMOS PARA ESCRITORIO", "v": 4172.85, "e": 745.91}, {"n": "KIT MITIGAÇÃO", "v": 2193.44, "e": -106.56}], "sup": [{"n": "MERCADO LIVRE", "v": 14108.01}, {"n": "A.G SIQUEIRA", "v": 12085.0}, {"n": "CENTER MADE", "v": 7860.0}, {"n": "FERRAMENTAS GERAIS", "v": 7751.38}, {"n": "BEM FICA MOVEIS DE ACO LTDA (MULTI AÇO FLEX)", "v": 4649.95}, {"n": "SORBDOM COMERCIO DE MATERIAIS ", "v": 2193.44}, {"n": "BONETE", "v": 337.5}], "cats": [{"cat": "ferramentas", "v": 25259.24, "r": 29210.42, "e": 3951.18, "items": [{"n": "ferramentas", "v": 25259.24, "r": 29210.42, "e": 3951.18}]}, {"cat": "tapume", "v": 7860.0, "r": 4500.0, "e": -3360.0, "items": [{"n": "tapume", "v": 7860.0, "r": 4500.0, "e": -3360.0}]}, {"cat": "Bebedouro de Água", "v": 4849.8, "r": 4999.8, "e": 150.0, "items": [{"n": "Bebedouro de Água", "v": 4849.8, "r": 4999.8, "e": 150.0}]}, {"cat": "armario alojamento", "v": 4649.95, "r": 4700.0, "e": 50.05, "items": [{"n": "armario alojamento", "v": 4649.95, "r": 4700.0, "e": 50.05}]}, {"cat": "INSUMOS PARA ESCRITORIO", "v": 4172.85, "r": 4918.76, "e": 745.91, "items": [{"n": "INSUMOS PARA ESCRITORIO", "v": 4172.85, "r": 4918.76, "e": 745.91}]}, {"cat": "KIT MITIGAÇÃO", "v": 2193.44, "r": 2086.88, "e": -106.56, "items": [{"n": "KIT MITIGAÇÃO", "v": 2193.44, "r": 2086.88, "e": -106.56}]}]}, "jun": {"mat": [{"n": "EPI", "v": 4912.5, "e": 0.0}], "sup": [{"n": "IMA EPI", "v": 4323.0}, {"n": "ASTRO EPI", "v": 589.5}], "cats": [{"cat": "EPI", "v": 4912.5, "r": 4912.5, "e": 0.0, "items": [{"n": "EPI", "v": 4912.5, "r": 4912.5, "e": 0.0}]}]}}, "0527/2026": {"jun": {"mat": [{"n": "MEDIDORES DE PRESSURIZAÇÃO", "v": 664.69, "e": 0.0}], "sup": [{"n": "LEFOO", "v": 664.69}], "cats": [{"cat": "MEDIDORES DE PRESSURIZAÇÃO", "v": 664.69, "r": 664.69, "e": 0.0, "items": [{"n": "MEDIDORES DE PRESSURIZAÇÃO", "v": 664.69, "r": 664.69, "e": 0.0}]}]}}};
+const PESQ = {};
+const PC = [];
+const PF = [];
+// ---------- CONSTANTES DE APOIO ----------
+const MONTH_ORDER = ["jan","fev","mar","abr","mai","jun"];
+const MONTH_SHORT = { jan:"JAN", fev:"FEV", mar:"MAR", abr:"ABR", mai:"MAI", jun:"JUN" };
+const WEEK_LABELS = ["D","S","T","Q","Q","S","S"];
+
+function fmtR(v){ return "R$ " + (Number(v)||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtN(v){ return (Number(v)||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtPct1(v){ return (Number(v)||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}) + "%"; }
+
+function mlRange(pct){
+  if (pct >= 25) return { label: "CRÍTICO", color: RD };
+  if (pct >= 20) return { label: "ALTO", color: OR };
+  if (pct >= 15) return { label: "MÉDIO", color: YL };
+  return { label: "DENTRO DA META", color: GR };
+}
+
+// Retorna a visão de dados unificada para o mês selecionado (ou "tri" = acumulado 2026)
+function getViewData(mF){
+  if (mF === "tri") {
+    return {
+      label: Q1.label, req: Q1.req, comp: Q1.comp, eco: Q1.eco, pct: Q1.pct,
+      ped: Q1.ped, forn: Q1.forn, obras: Q1.obras, nota: Q1.nota, pedVal: Q1.comp,
+      cal: null, calDays: 0, firstDay: 0,
+      obrasList: null, topForn: FORN_Q1, mat: null, isYear: true,
+    };
+  }
+  const m = MESES[mF];
+  return { ...m, isYear: false };
+}
+
+function mlForMonth(mF){
+  if (mF === "tri") {
+    const last = ML_EVO[ML_EVO.length-1];
+    const totalV = ML_EVO.reduce((s,x)=>s+x.v,0);
+    const totalComp = ML_EVO.reduce((s,x)=>s+x.total,0);
+    return { pct: totalComp ? (totalV/totalComp*100) : 0, v: totalV, total: totalComp };
+  }
+  const idx = MONTH_ORDER.indexOf(mF);
+  return ML_EVO[idx];
+}
+
+// ---------- MOTOR DE RISCO (dinâmico por mês) ----------
+function buildRisk(mF){
+  const data = getViewData(mF);
+  const ml = mlForMonth(mF);
+  const pesq = PESQ[mF];
+  const critico = [], alto = [], medio = [], positivo = [];
+
+  if (ml.pct > 20) critico.push(`MERCADO LIVRE EM ${fmtPct1(ml.pct)} DO COMPRADO — CONCENTRAÇÃO ACIMA DO LIMITE CRÍTICO`);
+  else if (ml.pct >= 15) alto.push(`MERCADO LIVRE EM ${fmtPct1(ml.pct)} DO COMPRADO — ACIMA DA META DE 15%`);
+  else positivo.push(`MERCADO LIVRE EM ${fmtPct1(ml.pct)} DO COMPRADO — DENTRO DA META (<15%)`);
+
+  const fornList = data.topForn || [];
+  const fornRuim = fornList.filter(f => f.na < 3.5);
+  const fornMedio = fornList.filter(f => f.na >= 3.5 && f.na < 4.0);
+  const fornBom = fornList.filter(f => f.na >= 4.0);
+  if (fornRuim.length) critico.push(`${fornRuim.length} FORNECEDOR${fornRuim.length>1?"ES":""} COM NOTA ABAIXO DE 3,5 (${fornRuim.map(f=>f.n).slice(0,3).join(", ")}${fornRuim.length>3?"...":""})`);
+  if (fornMedio.length) alto.push(`${fornMedio.length} FORNECEDOR${fornMedio.length>1?"ES":""} COM NOTA ENTRE 3,5 E 3,9`);
+  if (fornBom.length) positivo.push(`${fornBom.length} FORNECEDOR${fornBom.length>1?"ES":""} APROVADO${fornBom.length>1?"S":""} COM NOTA ≥ 4,0`);
+
+  const pctSaving = data.pct * 100;
+  if (pctSaving < 8) critico.push(`ECONOMIA DO MÊS EM ${fmtPct1(pctSaving)} — ABAIXO DE 8%`);
+  else if (pctSaving >= 10) positivo.push(`ECONOMIA DO MÊS EM ${fmtPct1(pctSaving)} — ACIMA DA META DE 10%`);
+
+  if (data.mat) {
+    const negativas = data.mat.filter(m => m.eco < 0);
+    if (negativas.length) alto.push(`${negativas.length} CATEGORIA${negativas.length>1?"S":""} DE MATERIAL COM ECONOMIA NEGATIVA (${negativas.map(m=>m.cat).slice(0,3).join(", ")}${negativas.length>3?"...":""})`);
+  }
+
+  if (data.ped && data.forn) {
+    const razao = data.ped / data.forn;
+    if (razao > 2.5) medio.push(`PEDIDOS FRAGMENTADOS — MÉDIA DE ${fmtN(razao)} PEDIDOS POR FORNECEDOR`);
+  }
+
+  if (fornList.length) {
+    const melhor = fornList.reduce((a,b)=> b.na > a.na ? b : a, fornList[0]);
+    positivo.push(`MELHOR NOTA DO PERÍODO: ${melhor.n} (${fmtN(melhor.na)})`);
+  }
+  positivo.push(`${fmtR(data.eco)} ECONOMIZADOS NO PERÍODO`);
+
+  if (pesq) {
+    critico.push(`PIOR CRITÉRIO DA PESQUISA: ${pesq.pior}`);
+    if (pesq.nps < 0) alto.push(`NPS BAIXO NA PESQUISA DE SATISFAÇÃO: ${pesq.nps}`);
+    (pesq.fracos||[]).forEach(f => medio.push(`CRITÉRIO FRACO NA PESQUISA: ${f}`));
+    if (pesq.obs) medio.push(`OBSERVAÇÃO DOS ENGENHEIROS: ${pesq.obs}`);
+    positivo.push(`AVALIAÇÃO GERAL DOS FORNECEDORES NA PESQUISA: ${fmtN(pesq.geral)}`);
+  }
+
+  return { critico, alto, medio, positivo };
+}
+
+// ---------- CALENDÁRIO DE GASTOS ----------
+function CalHeatmap({ cal, calDays, firstDay }){
+  if (!cal) return null;
+  const max = Math.max(1, ...cal.map(c=>c.v));
+  const byDay = {};
+  cal.forEach(c => byDay[c.d] = c.v);
+  const cells = [];
+  for (let i=0;i<firstDay;i++) cells.push(null);
+  for (let d=1; d<=calDays; d++) cells.push(d);
+  function colorFor(v){
+    if (!v) return BD + "30";
+    const t = v/max;
+    if (t > 0.66) return GR;
+    if (t > 0.33) return EM + "CC";
+    return EM + "66";
+  }
+  return (
+    <div>
+      <div style={{display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, marginBottom:6}}>
+        {WEEK_LABELS.map((w,i)=>(
+          <div key={i} style={{textAlign:"center", fontSize:10, color:MT, letterSpacing:1}}>{w}</div>
+        ))}
+      </div>
+      <div style={{display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4}}>
+        {cells.map((d,i)=>{
+          if (d===null) return <div key={i} />;
+          const v = byDay[d];
+          return (
+            <div key={i} title={v ? `DIA ${d}: ${fmtR(v)}` : `DIA ${d}`}
+              style={{
+                aspectRatio:"1", borderRadius:6, background: colorFor(v),
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:10, color: v ? "#05080E" : MT, fontWeight: v?700:400,
+                border: `1px solid ${BD}`,
+              }}>
+              {d}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ---------- CARD KPI ----------
+function KpiCard({ label, value, sub, color }){
+  return (
+    <div style={{ background:CD, border:`1px solid ${BD}`, borderRadius:10, padding:"16px 18px", flex:1, minWidth:150 }}>
+      <div style={{ fontSize:11, color:MT, letterSpacing:1.2, marginBottom:8, fontWeight:600 }}>{label}</div>
+      <div style={{ fontSize:22, color: color||WH, fontWeight:700 }}>{value}</div>
+      {sub && <div style={{ fontSize:12, color:SV, marginTop:4 }}>{sub}</div>}
+    </div>
+  );
+}
+
+function SectionTitle({ children }){
+  return <div style={{ fontSize:13, color:WH, fontWeight:700, letterSpacing:0.5, marginBottom:14 }}>{children}</div>;
+}
+
+function Card({ children, style }){
+  return <div style={{ background:CD, border:`1px solid ${BD}`, borderRadius:10, padding:18, ...style }}>{children}</div>;
+}
+
+// ---------- BLOCO MERCADO LIVRE ----------
+function MLBlock({ mF }){
+  const cur = mlForMonth(mF);
+  const range = mlRange(cur.pct);
+  if (mF === "tri") {
+    const last = ML_EVO[ML_EVO.length-1];
+    const prev = ML_EVO[ML_EVO.length-2];
+    const subiu = prev && last.pct > prev.pct;
+    return (
+      <Card>
+        <SectionTitle>MERCADO LIVRE — EVOLUÇÃO 2026</SectionTitle>
+        <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:12 }}>
+          {ML_EVO.map((e,i)=>(
+            <React.Fragment key={e.mes}>
+              <div style={{ textAlign:"center" }}>
+                <div style={{ fontSize:10, color:MT }}>{e.mes}</div>
+                <div style={{ fontSize:15, fontWeight:700, color: mlRange(e.pct).color }}>{fmtPct1(e.pct)}</div>
+              </div>
+              {i < ML_EVO.length-1 && <div style={{ color:MT }}>→</div>}
+            </React.Fragment>
+          ))}
+        </div>
+        <div style={{ fontSize:12, color:SV }}>
+          ACUMULADO DO ANO: <b style={{color:WH}}>{fmtPct1(cur.pct)}</b> do comprado via Mercado Livre.
+          {subiu && <span style={{ color:OR, marginLeft:8 }}>⚠ ALTA NO ÚLTIMO MÊS — RETOMAR DIVERSIFICAÇÃO DE FORNECEDORES.</span>}
+        </div>
+      </Card>
+    );
+  }
+  const idx = MONTH_ORDER.indexOf(mF);
+  const prev = idx > 0 ? ML_EVO[idx-1] : null;
+  const delta = prev ? cur.pct - prev.pct : null;
+  const acumIdx = ML_EVO.slice(0, idx+1);
+  const acumV = acumIdx.reduce((s,x)=>s+x.v,0);
+  const acumTotal = acumIdx.reduce((s,x)=>s+x.total,0);
+  const acumPct = acumTotal ? (acumV/acumTotal*100) : 0;
+  return (
+    <Card>
+      <SectionTitle>MERCADO LIVRE — COMPARATIVO MENSAL</SectionTitle>
+      <div style={{ display:"flex", gap:24, flexWrap:"wrap", alignItems:"center" }}>
+        <div>
+          <div style={{ fontSize:11, color:MT, letterSpacing:1 }}>STATUS DO MÊS</div>
+          <div style={{ fontSize:24, fontWeight:700, color: range.color }}>{fmtPct1(cur.pct)}</div>
+          <div style={{ fontSize:11, color: range.color, fontWeight:600 }}>{range.label}</div>
+        </div>
+        {prev && (
+          <div>
+            <div style={{ fontSize:11, color:MT, letterSpacing:1 }}>VS. MÊS ANTERIOR</div>
+            <div style={{ fontSize:18, fontWeight:700, color: delta>0?RD:GR }}>
+              {delta>0?"↑":"↓"} {fmtN(Math.abs(delta))} p.p.
+            </div>
+          </div>
+        )}
+        <div>
+          <div style={{ fontSize:11, color:MT, letterSpacing:1 }}>ACUMULADO 2026</div>
+          <div style={{ fontSize:18, fontWeight:700, color:WH }}>{fmtPct1(acumPct)}</div>
+        </div>
+        <div style={{ fontSize:11, color:SV, maxWidth:260 }}>
+          Meta estratégica: reduzir a concentração do Mercado Livre para abaixo de 15% do comprado.
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// ---------- ABA OVERVIEW ----------
+function Overview({ mF }){
+  const d = getViewData(mF);
+  const evoData = EVO.map(e => ({ ...e, mesShort: e.mes }));
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
+      <div style={{ display:"flex", gap:14, flexWrap:"wrap" }}>
+        <KpiCard label="REQUISITADO" value={fmtR(d.req)} color={RD} />
+        <KpiCard label="COMPRADO" value={fmtR(d.comp)} color={BL} />
+        <KpiCard label="ECONOMIZADO" value={fmtR(d.eco)} sub={`${fmtPct1(d.pct*100)} DE SAVING`} color={GR} />
+        <KpiCard label="Nº PEDIDOS" value={d.ped} color={CY} />
+        <KpiCard label="OBRAS ATIVAS" value={d.obras} color={VL} />
+        <KpiCard label="NOTA MÉDIA" value={fmtN(d.nota)} color={YL} />
+      </div>
+
+      <Card>
+        <SectionTitle>EVOLUÇÃO MENSAL — REQUISITADO x COMPRADO x % SAVING</SectionTitle>
+        <ResponsiveContainer width="100%" height={280}>
+          <ComposedChart data={evoData} margin={{ top:5, right:20, left:0, bottom:5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={BD} vertical={false} />
+            <XAxis dataKey="mes" stroke={MT} tick={{ fill: MT, fontSize:11 }} />
+            <YAxis yAxisId="l" stroke={MT} tick={{ fill: MT, fontSize:11 }} tickFormatter={v=>(v/1000)+"k"} />
+            <YAxis yAxisId="r" orientation="right" stroke={MT} tick={{ fill: MT, fontSize:11 }} tickFormatter={v=>v+"%"} />
+            <Tooltip contentStyle={{ background:CD, border:`1px solid ${BD}`, borderRadius:8, color:WH }}
+              formatter={(v,n)=> n==="pct" ? [fmtPct1(v),"% SAVING"] : [fmtR(v), n==="req"?"REQUISITADO":"COMPRADO"]} />
+            <Legend wrapperStyle={{ fontSize:11, color:TX }} />
+            <Bar yAxisId="l" dataKey="req" name="REQUISITADO" fill={RD} radius={[4,4,0,0]} />
+            <Bar yAxisId="l" dataKey="comp" name="COMPRADO" fill={GR} radius={[4,4,0,0]} />
+            <Line yAxisId="r" type="monotone" dataKey="pct" name="% SAVING" stroke={YL} strokeWidth={2} dot={{ r:4, fill:YL }} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </Card>
+
+      <div style={{ display:"flex", gap:18, flexWrap:"wrap" }}>
+        {!d.isYear && (
+          <Card style={{ flex:"1 1 320px" }}>
+            <SectionTitle>CALENDÁRIO DE GASTOS — {d.label}</SectionTitle>
+            <CalHeatmap cal={d.cal} calDays={d.calDays} firstDay={d.firstDay} />
+          </Card>
+        )}
+        <div style={{ flex:"2 1 420px" }}>
+          <MLBlock mF={mF} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- ABA FORNECEDORES ----------
+function Fornecedores({ mF }){
+  const d = getViewData(mF);
+  const list = (d.topForn || []).slice(0, 15);
+  const totalComp = d.comp;
+  const chartData = list.map(f => ({ name: f.n.length>18 ? f.n.slice(0,18)+"…" : f.n, v: f.v }));
+  const pesq = PESQ[mF];
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
+      <Card>
+        <SectionTitle>RANKING DE FORNECEDORES — {d.label}</SectionTitle>
+        <ResponsiveContainer width="100%" height={Math.max(280, list.length*28)}>
+          <BarChart data={chartData} layout="vertical" margin={{ top:5, right:30, left:10, bottom:5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={BD} horizontal={false} />
+            <XAxis type="number" stroke={MT} tick={{ fill:MT, fontSize:11 }} tickFormatter={v=>(v/1000)+"k"} />
+            <YAxis type="category" dataKey="name" stroke={MT} tick={{ fill:TX, fontSize:11 }} width={150} />
+            <Tooltip contentStyle={{ background:CD, border:`1px solid ${BD}`, borderRadius:8, color:WH }} formatter={v=>[fmtR(v),"COMPRADO"]} />
+            <Bar dataKey="v" fill={VL} radius={[0,4,4,0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+
+      <Card>
+        <SectionTitle>TABELA DE FORNECEDORES</SectionTitle>
+        <div style={{ overflowX:"auto" }}>
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12.5 }}>
+            <thead>
+              <tr style={{ borderBottom:`1px solid ${BD}` }}>
+                {["FORNECEDOR","VALOR COMPRADO","Nº PEDIDOS","NOTA","PARTICIPAÇÃO %"].map(h=>(
+                  <th key={h} style={{ textAlign: h==="FORNECEDOR"?"left":"right", padding:"8px 6px", color:MT, fontWeight:600, letterSpacing:0.5 }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((f,i)=>(
+                <tr key={i} style={{ borderBottom:`1px solid ${BD}55` }}>
+                  <td style={{ padding:"8px 6px", color:WH }}>{f.n}</td>
+                  <td style={{ padding:"8px 6px", textAlign:"right", color:TX }}>{fmtR(f.v)}</td>
+                  <td style={{ padding:"8px 6px", textAlign:"right", color:TX }}>{f.p}</td>
+                  <td style={{ padding:"8px 6px", textAlign:"right", color: f.na>=4?GR:(f.na>=3.5?YL:RD) }}>{fmtN(f.na)}</td>
+                  <td style={{ padding:"8px 6px", textAlign:"right", color:TX }}>{fmtPct1(totalComp? f.v/totalComp*100 : 0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {pesq && (
+        <Card>
+          <SectionTitle>PESQUISA DE SATISFAÇÃO — {d.label}</SectionTitle>
+          <div style={{ display:"flex", gap:14, flexWrap:"wrap", marginBottom:16 }}>
+            <KpiCard label="NPS" value={pesq.nps} color={pesq.nps>=0?GR:RD} />
+            <KpiCard label="AVALIAÇÃO GERAL FORNECEDORES" value={fmtN(pesq.geral)} color={GR} />
+            <KpiCard label="MÉDIA DO SETOR" value={fmtN(pesq.media)} color={BL} />
+          </div>
+          <div style={{ display:"flex", gap:18, flexWrap:"wrap" }}>
+            {PC.length>0 && (
+              <div style={{ flex:"1 1 300px" }}>
+                <ResponsiveContainer width="100%" height={260}>
+                  <RadarChart data={PC}>
+                    <PolarGrid stroke={BD} />
+                    <PolarAngleAxis dataKey="c" tick={{ fill:TX, fontSize:10 }} />
+                    <PolarRadiusAxis domain={[0,5]} tick={{ fill:MT, fontSize:9 }} />
+                    <Radar dataKey="v" stroke={CY} fill={CY} fillOpacity={0.3} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            <div style={{ flex:"1 1 260px" }}>
+              <div style={{ fontSize:11, color:MT, letterSpacing:1, marginBottom:8 }}>DESTAQUES</div>
+              <div style={{ fontSize:12, color:GR, marginBottom:6 }}>PONTOS FORTES</div>
+              {(pesq.fortes||[]).map((f,i)=><div key={i} style={{ fontSize:12, color:TX, marginBottom:4 }}>• {f}</div>)}
+              <div style={{ fontSize:12, color:OR, margin:"10px 0 6px" }}>PLANO DE AÇÃO</div>
+              {(pesq.fracos||[]).map((f,i)=><div key={i} style={{ fontSize:12, color:TX, marginBottom:4 }}>• {f}</div>)}
+              {pesq.obs && <div style={{ fontSize:12, color:SV, marginTop:10, fontStyle:"italic" }}>"{pesq.obs}"</div>}
+            </div>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ---------- ABA OBRAS ----------
+function Obras({ mF, selectedObra, setSelectedObra }){
+  const d = getViewData(mF);
+  const list = (d.obrasList || []).slice().sort((a,b)=> b.eco - a.eco);
+  const chartData = list.map(o => ({ name:o.k, v:o.eco }));
+
+  if (selectedObra) {
+    const od = OD[selectedObra] && OD[selectedObra][mF];
+    return (
+      <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
+        <button onClick={()=>setSelectedObra(null)} style={{
+          alignSelf:"flex-start", background:CD, border:`1px solid ${BD}`, color:TX, padding:"8px 14px",
+          borderRadius:8, cursor:"pointer", fontSize:12,
+        }}>← VOLTAR PARA TODAS AS OBRAS</button>
+        <SectionTitle>OBRA {selectedObra} — {d.label}</SectionTitle>
+        {!od ? (
+          <Card><div style={{ color:MT, fontSize:13 }}>SEM ECONOMIA REGISTRADA NESTE PERÍODO</div></Card>
+        ) : (
+          <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
+            <div style={{ display:"flex", gap:18, flexWrap:"wrap" }}>
+              <Card style={{ flex:"1 1 380px" }}>
+                <SectionTitle>VOLUME COMPRADO POR MATERIAL</SectionTitle>
+                <ResponsiveContainer width="100%" height={Math.max(220, od.mat.length*30)}>
+                  <BarChart data={od.mat.map(m=>({ name:m.n.length>16?m.n.slice(0,16)+"…":m.n, v:m.v }))} layout="vertical" margin={{ left:10, right:20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={BD} horizontal={false} />
+                    <XAxis type="number" stroke={MT} tick={{ fill:MT, fontSize:11 }} tickFormatter={v=>(v/1000)+"k"} />
+                    <YAxis type="category" dataKey="name" stroke={MT} tick={{ fill:TX, fontSize:11 }} width={130} />
+                    <Tooltip contentStyle={{ background:CD, border:`1px solid ${BD}`, borderRadius:8, color:WH }} formatter={v=>[fmtR(v),"COMPRADO"]} />
+                    <Bar dataKey="v" fill={BL} radius={[0,4,4,0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card>
+              <Card style={{ flex:"1 1 300px" }}>
+                <SectionTitle>FORNECEDORES DA OBRA</SectionTitle>
+                {od.sup.map((s,i)=>(
+                  <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:`1px solid ${BD}55`, fontSize:12.5 }}>
+                    <span style={{ color:TX }}>{s.n}</span>
+                    <span style={{ color:WH, fontWeight:600 }}>{fmtR(s.v)}</span>
+                  </div>
+                ))}
+              </Card>
+            </div>
+            <Card>
+              <SectionTitle>CATEGORIAS E ECONOMIA</SectionTitle>
+              <div style={{ overflowX:"auto" }}>
+                <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12.5 }}>
+                  <thead>
+                    <tr style={{ borderBottom:`1px solid ${BD}` }}>
+                      {["MATERIAL","REQUISITADO","COMPRADO","ECONOMIA","% SAVING"].map(h=>(
+                        <th key={h} style={{ textAlign:h==="MATERIAL"?"left":"right", padding:"8px 6px", color:MT }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {od.cats.map((c,i)=>(
+                      <tr key={i} style={{ borderBottom:`1px solid ${BD}55` }}>
+                        <td style={{ padding:"8px 6px", color:WH }}>{c.cat}</td>
+                        <td style={{ padding:"8px 6px", textAlign:"right", color:TX }}>{fmtR(c.r)}</td>
+                        <td style={{ padding:"8px 6px", textAlign:"right", color:TX }}>{fmtR(c.v)}</td>
+                        <td style={{ padding:"8px 6px", textAlign:"right", color: c.e>=0?GR:RD }}>{fmtR(c.e)}</td>
+                        <td style={{ padding:"8px 6px", textAlign:"right", color: c.e>=0?GR:RD }}>{fmtPct1(c.r? c.e/c.r*100:0)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
+      <Card>
+        <SectionTitle>OBRAS DO PERÍODO — {d.label} (clique numa barra para ver o detalhe)</SectionTitle>
+        <ResponsiveContainer width="100%" height={Math.max(280, chartData.length*34)}>
+          <BarChart data={chartData} layout="vertical" margin={{ left:10, right:30 }} onClick={(e)=>{ if(e && e.activeLabel) setSelectedObra(e.activeLabel); }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={BD} horizontal={false} />
+            <XAxis type="number" stroke={MT} tick={{ fill:MT, fontSize:11 }} tickFormatter={v=>(v/1000)+"k"} />
+            <YAxis type="category" dataKey="name" stroke={MT} tick={{ fill:TX, fontSize:11 }} width={90} />
+            <Tooltip contentStyle={{ background:CD, border:`1px solid ${BD}`, borderRadius:8, color:WH }} formatter={v=>[fmtR(v),"ECONOMIA"]} />
+            <Bar dataKey="v" fill={GR} radius={[0,4,4,0]} cursor="pointer" />
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+      <Card>
+        <div style={{ overflowX:"auto" }}>
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12.5 }}>
+            <thead>
+              <tr style={{ borderBottom:`1px solid ${BD}` }}>
+                {["OBRA","REQUISITADO","COMPRADO","ECONOMIA","% SAVING"].map(h=>(
+                  <th key={h} style={{ textAlign:h==="OBRA"?"left":"right", padding:"8px 6px", color:MT }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((o,i)=>(
+                <tr key={i} style={{ borderBottom:`1px solid ${BD}55`, cursor:"pointer" }} onClick={()=>setSelectedObra(o.k)}>
+                  <td style={{ padding:"8px 6px", color:CY, fontWeight:600 }}>{o.k}</td>
+                  <td style={{ padding:"8px 6px", textAlign:"right", color:TX }}>{fmtR(o.req)}</td>
+                  <td style={{ padding:"8px 6px", textAlign:"right", color:TX }}>{fmtR(o.comp)}</td>
+                  <td style={{ padding:"8px 6px", textAlign:"right", color: o.eco>=0?GR:RD }}>{fmtR(o.eco)}</td>
+                  <td style={{ padding:"8px 6px", textAlign:"right", color: o.eco>=0?GR:RD }}>{fmtPct1(o.req? o.eco/o.req*100:0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// ---------- ABA PARETO ----------
+function Pareto({ mF }){
+  const d = getViewData(mF);
+  const list = (d.topForn || []).slice().sort((a,b)=>b.v-a.v);
+  const total = list.reduce((s,f)=>s+f.v,0);
+  let acc = 0;
+  const chartData = list.map(f => {
+    acc += f.v;
+    return { name: f.n.length>14?f.n.slice(0,14)+"…":f.n, v:f.v, acumPct: total? acc/total*100 : 0 };
+  });
+  const top1 = total? (list[0]?.v||0)/total*100 : 0;
+  const top3 = total? list.slice(0,3).reduce((s,f)=>s+f.v,0)/total*100 : 0;
+  const top5 = total? list.slice(0,5).reduce((s,f)=>s+f.v,0)/total*100 : 0;
+  const ml = mlForMonth(mF);
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
+      <div style={{ display:"flex", gap:14, flexWrap:"wrap" }}>
+        <KpiCard label="TOP 1 FORNECEDOR" value={fmtPct1(top1)} color={top1>25?RD:GR} />
+        <KpiCard label="TOP 3 FORNECEDORES" value={fmtPct1(top3)} color={VL} />
+        <KpiCard label="TOP 5 FORNECEDORES" value={fmtPct1(top5)} color={PK} />
+        <KpiCard label="MERCADO LIVRE (META <15%)" value={fmtPct1(ml.pct)} color={mlRange(ml.pct).color} />
+      </div>
+      <Card>
+        <SectionTitle>CURVA DE PARETO — {d.label}</SectionTitle>
+        <ResponsiveContainer width="100%" height={340}>
+          <ComposedChart data={chartData} margin={{ top:5, right:20, left:0, bottom:60 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={BD} vertical={false} />
+            <XAxis dataKey="name" stroke={MT} tick={{ fill:MT, fontSize:10 }} angle={-40} textAnchor="end" interval={0} height={80} />
+            <YAxis yAxisId="l" stroke={MT} tick={{ fill:MT, fontSize:11 }} tickFormatter={v=>(v/1000)+"k"} />
+            <YAxis yAxisId="r" orientation="right" stroke={MT} tick={{ fill:MT, fontSize:11 }} tickFormatter={v=>v+"%"} domain={[0,100]} />
+            <Tooltip contentStyle={{ background:CD, border:`1px solid ${BD}`, borderRadius:8, color:WH }}
+              formatter={(v,n)=> n==="acumPct" ? [fmtPct1(v),"% ACUMULADO"] : [fmtR(v),"COMPRADO"]} />
+            <Bar yAxisId="l" dataKey="v" fill={VL} radius={[4,4,0,0]} />
+            <Line yAxisId="r" type="monotone" dataKey="acumPct" stroke={CY} strokeWidth={2} dot={{ r:3, fill:CY }} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </Card>
+      <Card>
+        <SectionTitle>MERCADO LIVRE — EVOLUÇÃO POR MÊS</SectionTitle>
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={ML_EVO} margin={{ top:5, right:20, left:0, bottom:5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={BD} vertical={false} />
+            <XAxis dataKey="mes" stroke={MT} tick={{ fill:MT, fontSize:11 }} />
+            <YAxis stroke={MT} tick={{ fill:MT, fontSize:11 }} tickFormatter={v=>v+"%"} />
+            <Tooltip contentStyle={{ background:CD, border:`1px solid ${BD}`, borderRadius:8, color:WH }} formatter={v=>[fmtPct1(v),"% DO COMPRADO"]} />
+            <Bar dataKey="pct" radius={[4,4,0,0]}>
+              {ML_EVO.map((e,i)=><Cell key={i} fill={mlRange(e.pct).color} />)}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+    </div>
+  );
+}
+
+// ---------- ABA RISCO ----------
+function RiskGroup({ title, icon, color, items }){
+  return (
+    <Card style={{ flex:"1 1 280px" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+        <div style={{ fontSize:13, fontWeight:700, color:WH }}>{icon} {title}</div>
+        <div style={{ background:color+"22", color:color, borderRadius:20, padding:"2px 10px", fontSize:12, fontWeight:700 }}>{items.length}</div>
+      </div>
+      {items.length===0 ? (
+        <div style={{ fontSize:12, color:MT }}>NENHUM ITEM NESTA CATEGORIA</div>
+      ) : items.map((it,i)=>(
+        <div key={i} style={{ fontSize:12.5, color:TX, padding:"7px 0", borderBottom: i<items.length-1?`1px solid ${BD}55`:"none" }}>• {it}</div>
+      ))}
+    </Card>
+  );
+}
+
+function Risco({ mF }){
+  const risk = useMemo(()=>buildRisk(mF), [mF]);
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
+      <div style={{ display:"flex", gap:18, flexWrap:"wrap" }}>
+        <RiskGroup title="CRÍTICO" icon="🔴" color={RD} items={risk.critico} />
+        <RiskGroup title="ALTO" icon="🟠" color={OR} items={risk.alto} />
+      </div>
+      <div style={{ display:"flex", gap:18, flexWrap:"wrap" }}>
+        <RiskGroup title="MÉDIO" icon="🟡" color={YL} items={risk.medio} />
+        <RiskGroup title="POSITIVO" icon="🟢" color={GR} items={risk.positivo} />
+      </div>
+      <Card>
+        <SectionTitle>PLANO DE AÇÃO</SectionTitle>
+        <div style={{ fontSize:12.5, color:TX }}>
+          Priorizar a diversificação de fornecedores nas categorias com maior concentração no Mercado Livre e acompanhar
+          de perto os fornecedores com nota abaixo de 4,0, mantendo o ritmo de negociação que vem sustentando o saving do período.
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// ---------- SIDEBAR ----------
+const TABS = [
+  { id:"overview", label:"OVERVIEW", icon:"◈" },
+  { id:"fornecedores", label:"FORNECEDORES", icon:"🏭" },
+  { id:"obras", label:"OBRAS", icon:"🏗" },
+  { id:"pareto", label:"PARETO", icon:"📊" },
+  { id:"risco", label:"RISCO", icon:"⚠" },
+];
+
+function Sidebar({ tab, setTab }){
+  return (
+    <div style={{ width:88, background:CD, borderRight:`1px solid ${BD}`, display:"flex", flexDirection:"column", alignItems:"center", padding:"18px 0", flexShrink:0 }}>
+      <div style={{ background:"#fff", borderRadius:8, padding:"10px 8px", textAlign:"center", marginBottom:26, width:64 }}>
+        <div style={{ fontFamily:"Arial Black, Arial, sans-serif", fontWeight:900, color:NAVY, fontSize:15, lineHeight:1 }}>BMX1</div>
+        <div style={{ fontSize:6.5, color:NAVY, letterSpacing:0.5, marginTop:2, fontWeight:700 }}>ENGENHARIA</div>
+      </div>
+      {TABS.map(t=>(
+        <div key={t.id} onClick={()=>setTab(t.id)} title={t.label} style={{
+          width:64, padding:"10px 4px", marginBottom:8, borderRadius:8, cursor:"pointer", textAlign:"center",
+          background: tab===t.id ? BD : "transparent",
+          border: tab===t.id ? `1px solid ${CY}55` : "1px solid transparent",
+        }}>
+          <div style={{ fontSize:18, marginBottom:3 }}>{t.icon}</div>
+          <div style={{ fontSize:8.5, color: tab===t.id?CY:MT, fontWeight:700, letterSpacing:0.3 }}>{t.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------- HEADER ----------
+function Header({ mF, setMF, label }){
+  return (
+    <div style={{ padding:"16px 26px", borderBottom:`1px solid ${BD}`, display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:12, flexShrink:0 }}>
+      <div>
+        <div style={{ fontSize:11, color:MT, letterSpacing:1.2, fontWeight:600 }}>BMX1 ENGENHARIA • SETOR DE COMPRAS</div>
+        <div style={{ fontSize:20, color:WH, fontWeight:800, marginTop:2 }}>DASHBOARD — {label}</div>
+      </div>
+      <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+        {MONTH_ORDER.map(m=>(
+          <button key={m} onClick={()=>setMF(m)} style={{
+            background: mF===m ? CY : CD, color: mF===m ? "#05080E" : TX,
+            border:`1px solid ${mF===m?CY:BD}`, borderRadius:8, padding:"7px 12px",
+            fontSize:12, fontWeight:700, cursor:"pointer", letterSpacing:0.5,
+          }}>{MONTH_SHORT[m]}</button>
+        ))}
+        <button onClick={()=>setMF("tri")} style={{
+          background: mF==="tri" ? GR : CD, color: mF==="tri" ? "#05080E" : TX,
+          border:`1px solid ${mF==="tri"?GR:BD}`, borderRadius:8, padding:"7px 14px",
+          fontSize:12, fontWeight:700, cursor:"pointer", letterSpacing:0.5,
+        }}>2026</button>
+      </div>
+    </div>
+  );
+}
+
+// ---------- APP ----------
+function Dashboard(){
+  const [tab, setTab] = useState("overview");
+  const [mF, setMF] = useState("jun");
+  const [selectedObra, setSelectedObra] = useState(null);
+
+  function changeTab(t){ setTab(t); setSelectedObra(null); }
+  function changeMonth(m){ setMF(m); setSelectedObra(null); }
+
+  const d = getViewData(mF);
+
+  return (
+    <div style={{ display:"flex", width:"100%", height:"100%", background:BG, color:TX }}>
+      <Sidebar tab={tab} setTab={changeTab} />
+      <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0 }}>
+        <Header mF={mF} setMF={changeMonth} label={d.label} />
+        <div style={{ flex:1, overflowY:"auto", padding:24 }}>
+          {tab==="overview" && <Overview mF={mF} />}
+          {tab==="fornecedores" && <Fornecedores mF={mF} />}
+          {tab==="obras" && <Obras mF={mF} selectedObra={selectedObra} setSelectedObra={setSelectedObra} />}
+          {tab==="pareto" && <Pareto mF={mF} />}
+          {tab==="risco" && <Risco mF={mF} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Dashboard />);
+</script>
+<script>
+(function(){
+  var code = document.getElementById("dashboard-source").textContent;
+  var output = Babel.transform(code, { presets: [["react", { runtime: "classic" }]] }).code;
+  var s = document.createElement("script");
+  s.text = output;
+  document.body.appendChild(s);
+})();
+</script>
+</body>
+</html>
