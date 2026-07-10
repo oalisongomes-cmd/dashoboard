@@ -5051,7 +5051,7 @@ function Dashboard() {
                       >
                         STATUS — COMPRAS
                       </div>
-                      <ResponsiveContainer width="100%" height={170}>
+                      <ResponsiveContainer width="100%" height={140}>
                         <PieChart>
                           <Pie
                             data={[
@@ -5065,8 +5065,6 @@ function Dashboard() {
                             outerRadius={62}
                             paddingAngle={3}
                             dataKey="value"
-                            label={({ name, value }) => name + ": " + value}
-                            style={{ fontSize: 7.5 }}
                             animationDuration={600}
                           >
                             <Cell fill={GR} />
@@ -5075,6 +5073,13 @@ function Dashboard() {
                           </Pie>
                         </PieChart>
                       </ResponsiveContainer>
+                      <Lg
+                        items={[
+                          { l: "APROVADOS: " + gF, c: GR },
+                          { l: "ATENÇÃO: " + aF, c: YL },
+                          { l: "CRÍTICOS: " + bF, c: RD },
+                        ]}
+                      />
                     </div>
                     <div
                       style={{
@@ -5727,12 +5732,7 @@ function Dashboard() {
                           paddingAngle={2}
                           dataKey="comp"
                           nameKey="k"
-                          label={({ payload, percent }) =>
-                            ((NM[payload.k] || "").split(" ")[0] || "") +
-                            " " +
-                            (percent * 100).toFixed(0) +
-                            "%"
-                          }
+                          label={({ percent }) => (percent * 100).toFixed(0) + "%"}
                           style={{ fontSize: 7.5 }}
                           animationDuration={800}
                         >
