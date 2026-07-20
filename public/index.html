@@ -158,7 +158,7 @@ const Lg = ({ items }) => (
     ))}
   </div>
 );
-const MESES = {
+let MESES = {
   jan: {
     label: "JANEIRO",
     req: 163804.89,
@@ -2085,7 +2085,7 @@ const MESES = {
     ],
   },
 };
-const Q1 = {
+let Q1 = {
   label: "2026",
   req: 1261676.06,
   comp: 1020979.75,
@@ -2096,7 +2096,7 @@ const Q1 = {
   obras: 10,
   nota: 4.32,
 };
-const EVO = [
+let EVO = [
   { mes: "JAN", req: 163804.89, comp: 141949.78, eco: 21855.11, pct: 13.34 },
   { mes: "FEV", req: 110306.09, comp: 104347.93, eco: 5958.16, pct: 5.4 },
   { mes: "MAR", req: 237085.99, comp: 206421.31, eco: 30664.68, pct: 12.93 },
@@ -2116,7 +2116,7 @@ const NM = {
   "0455/2025": "COMB. INCÊNDIO TÚNEL",
   "0478/2025": "TAIAÇUPEBA",
 };
-const ML_EVO = [
+let ML_EVO = [
   { mes: "JAN", pct: 26.91, v: 38194.42, total: 141949.78 },
   { mes: "FEV", pct: 29.37, v: 30650.99, total: 104347.93 },
   { mes: "MAR", pct: 16.27, v: 33576.87, total: 206421.31 },
@@ -2144,7 +2144,7 @@ const MAT_Q1 = (() => {
 })();
 
 // FORN_Q1 consolidado
-const FORN_Q1 = [
+let FORN_Q1 = [
   { n: "MERCADO LIVRE", v: 161865.01, p: 73, na: 4.37, o: 8 },
   { n: "IMA EPI", v: 95348.02, p: 13, na: 4.55, o: 6 },
   { n: "A.G SIQUEIRA", v: 89200.1, p: 16, na: 4.43, o: 6 },
@@ -2161,7 +2161,7 @@ const FORN_Q1 = [
   { n: "MAGAZINE LUIZA", v: 21549.42, p: 3, na: 4.33, o: 2 },
   { n: "REAL PERFIL", v: 19570.2, p: 4, na: 4.6, o: 2 },
 ];
-const FORN_RANK = {
+let FORN_RANK = {
   jan: [
     { n: "DISPAN", v: 1610.0, p: 1, na: 4.7, o: 1 },
     { n: "A.G SIQUEIRA", v: 6783.2, p: 2, na: 4.65, o: 2 },
@@ -2337,7 +2337,7 @@ const FORN_RANK = {
     { n: "BERMAD BRASIL INDUSTRI", v: 16136.7, p: 1, na: 4.3, o: 1 },
   ],
 };
-const OD = {
+let OD = {
   "0000/2025": {
     jan: {
       mat: [
@@ -7490,7 +7490,28 @@ function Dashboard() {
     </div>
   );
 }
-ReactDOM.createRoot(document.getElementById("root")).render(<Dashboard />);
+function boot() {
+  var rootEl = document.getElementById("root");
+  fetch("/api/dashboard-data")
+    .then(function (r) { return r.json(); })
+    .then(function (json) {
+      if (json && json.ok && json.data) {
+        var d = json.data;
+        if (d.MESES) MESES = d.MESES;
+        if (d.Q1) Q1 = d.Q1;
+        if (d.EVO) EVO = d.EVO;
+        if (d.ML_EVO) ML_EVO = d.ML_EVO;
+        if (d.FORN_RANK) FORN_RANK = d.FORN_RANK;
+        if (d.OD) OD = d.OD;
+        if (d.FORN_Q1) FORN_Q1 = d.FORN_Q1;
+      }
+    })
+    .catch(function () {})
+    .then(function () {
+      ReactDOM.createRoot(rootEl).render(<Dashboard />);
+    });
+}
+boot();
 </script>
 <script>
 (function(){
