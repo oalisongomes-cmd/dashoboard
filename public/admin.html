@@ -25,6 +25,8 @@
   .dropzone p { margin: 0; font-size: 13px; color: #94A3B8; }
   .dropzone .fname { color: #22D3EE; font-weight: 700; margin-top: 8px; font-size: 13px; }
   input[type="file"] { display: none; }
+  input[type="password"] { width: 100%; background: #05080E; border: 1px solid #1A2540; border-radius: 8px; padding: 12px 14px; color: #E2E8F0; font-size: 14px; margin-bottom: 10px; }
+  input[type="password"]:focus { outline: none; border-color: #22D3EE; }
   button.send { width: 100%; margin-top: 18px; background: #22D3EE; color: #05080E; border: none; border-radius: 8px; padding: 13px; font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; }
   button.send:disabled { opacity: 0.4; cursor: not-allowed; }
   .status { margin-top: 16px; font-size: 12.5px; border-radius: 8px; padding: 12px 14px; display: none; }
@@ -67,6 +69,15 @@
       </div>
       <button class="send" id="sendBtn" disabled>Processar e Atualizar Dashboard</button>
       <div class="status" id="status"></div>
+    </div>
+
+    <div class="card">
+      <h2>Trocar minha senha</h2>
+      <input type="password" id="pwAtual" placeholder="Senha atual" />
+      <input type="password" id="pwNova" placeholder="Nova senha" />
+      <input type="password" id="pwConfirm" placeholder="Repita a nova senha" />
+      <button class="send" id="pwBtn">Salvar nova senha</button>
+      <div class="status" id="pwStatus"></div>
     </div>
   </main>
 
@@ -142,6 +153,40 @@
       }
     }
     loadMeta();
+
+    const pwBtn = document.getElementById("pwBtn");
+    const pwStatus = document.getElementById("pwStatus");
+    pwBtn.addEventListener("click", async () => {
+      const atual = document.getElementById("pwAtual").value;
+      const nova = document.getElementById("pwNova").value;
+      const confirm = document.getElementById("pwConfirm").value;
+      pwStatus.className = "status";
+      pwBtn.disabled = true;
+      pwBtn.textContent = "Salvando...";
+      try {
+        const resp = await fetch("/admin/change-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ atual, nova, confirm }),
+        });
+        const json = await resp.json();
+        if (json.ok) {
+          pwStatus.className = "status ok";
+          pwStatus.textContent = "Senha alterada com sucesso!";
+          document.getElementById("pwAtual").value = "";
+          document.getElementById("pwNova").value = "";
+          document.getElementById("pwConfirm").value = "";
+        } else {
+          pwStatus.className = "status err";
+          pwStatus.textContent = "Erro: " + json.error;
+        }
+      } catch (e) {
+        pwStatus.className = "status err";
+        pwStatus.textContent = "Erro de rede.";
+      }
+      pwBtn.disabled = false;
+      pwBtn.textContent = "Salvar nova senha";
+    });
   </script>
 </body>
 </html>
