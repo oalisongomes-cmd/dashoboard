@@ -196,8 +196,20 @@ app.post("/admin/upload", requireAuth, upload.single("planilha"), async (req, re
 // Qualquer outra rota manda para a raiz (que exige login).
 app.use((req, res) => res.redirect("/"));
 
+// Se algo assíncrono falhar sem tratamento (ex.: banco fora do ar), apenas registra o
+// erro em vez de derrubar o processo inteiro — assim o site continua no ar.
+process.on("unhandledRejection", (err) => {
+  console.error("[aviso] erro não tratado (ignorado para manter o site no ar):", err);
+});
+
 async function start() {
-  await db.ensureSchema();
+  // O banco é opcional para o site subir. Se a criação do schema falhar (banco fora do
+  // ar, credenciais erradas, etc.), o servidor sobe mesmo assim e serve as páginas.
+  try {
+    await db.ensureSchema();
+  } catch (err) {
+    console.error("[aviso] não foi possível preparar o banco de dados:", err.message);
+  }
   app.listen(PORT, () => {
     console.log(`BMX1 Dashboard rodando na porta ${PORT}`);
   });

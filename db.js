@@ -9,6 +9,11 @@ if (hasDb) {
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 5000,
+  });
+  // Sem esse handler, um erro do pool (banco caiu) derrubaria o processo inteiro.
+  pool.on("error", (err) => {
+    console.error("[db] erro no pool do Postgres (ignorado):", err.message);
   });
 }
 
